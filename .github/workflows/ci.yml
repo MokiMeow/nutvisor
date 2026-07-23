@@ -1,0 +1,30 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: sudo apt-get update && sudo apt-get install -y gcc make nasm
+
+      - name: Build VMM and guest
+        run: make all
+
+      - name: Run milestone 0 (only where /dev/kvm exists)
+        run: |
+          if [ -e /dev/kvm ]; then
+            out=$(make run)
+            echo "$out"
+            echo "$out" | grep -q "guest is alive"
+          else
+            echo "SKIP: /dev/kvm is not available on this runner (no nested virt)."
+            echo "The build succeeded; the guest run is verified locally where KVM exists."
+          fi
