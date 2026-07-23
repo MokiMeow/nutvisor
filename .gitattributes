@@ -1,0 +1,8 @@
+# Force LF on checkout so shell scripts, the Makefile and C/asm build correctly
+# under WSL2/Linux even when the working copy lives on Windows.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.gif binary
+*.bin binary
