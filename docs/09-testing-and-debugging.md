@@ -1,0 +1,61 @@
+# 09 — Testing & debugging
+
+A hypervisor bug usually looks like a guest that silently triple-faults. These
+are the techniques that make nutvisor debuggable.
+
+## Read the exit reason
+
+The first question is always "why did `KVM_RUN` return?". nutvisor already
+prints the unusual ones (`SHUTDOWN`, `FAIL_ENTRY`, `INTERNAL_ERROR`,
+`unhandled exit_reason`). When something goes wrong, that stderr line is your
+first clue:
+
+- **`KVM_EXIT_SHUTDOWN`** — the guest triple-faulted. Its initial CPU state or
+  memory is wrong (bad segment, bad page tables, code not where `rip` points).
+- **`KVM_EXIT_FAIL_ENTRY`** — the CPU refused to enter the guest; the
+  `hardware_entry_failure_reason` is a VT-x code. Almost always an invalid
+  `sregs` combination (e.g. long-mode bits set without valid paging).
+- **`unhandled exit_reason=N`** — the guest used a device/feature you haven't
+  emulated yet.
+
+## Dump register state before `KVM_RUN`
+
+The highest-value debugging tool: `KVM_GET_REGS`/`KVM_GET_SREGS` right before
+running, printed field by field, checked against the Intel manual. A single
+wrong bit in `cr0`, `efer`, or a segment descriptor is the usual cause of a
+mode-transition failure.
+
+## Inspect guest memory directly
+
+Guest-physical memory is just `vm.mem`. After (or during) a run you can dump
+bytes at any guest address from the host — no debugger needed — to confirm your
+loader put code where you think, or that the guest wrote what you expect.
+
+## Single-step the guest
+
+KVM supports guest debugging via `KVM_SET_GUEST_DEBUG` (set
+`KVM_GUESTDBG_ENABLE | KVM_GUESTDBG_SINGLESTEP`); each instruction then returns a
+`KVM_EXIT_DEBUG`. Combined with a register dump per step, this walks the guest
+instruction by instruction — invaluable for a mode transition that dies after a
+few instructions. (A `-gdb` bridge is a stretch goal.)
+
+## Cross-check against QEMU
+
+If a guest image runs under `qemu-system-x86_64 -kernel/-hda ...` but not under
+nutvisor, the bug is in *your* setup, not the guest. QEMU is the oracle.
+
+## Self-test (milestone 6)
+
+Run a guest that writes a known string (or a known value to an "exit" MMIO
+device), capture stdout, and assert it. That's the automated equivalent of the
+milestone-0 manual check and what CI runs where `/dev/kvm` is available.
+
+## Common failure table
+
+| Symptom | Likely cause |
+|---------|--------------|
+| `KVM_EXIT_SHUTDOWN` immediately | `rip`/`cs.base` wrong; code not at that address |
+| `FAIL_ENTRY` entering long mode | `efer.LMA`/`cr0.PG`/`cr4.PAE`/`cr3` inconsistent |
+| Guest prints nothing | serial port mismatch, or guest uses a driver that polls LSR |
+| Garbage in guest `.bss` | ELF loader skipped the `p_memsz` zero-fill |
+| `open /dev/kvm` fails | `/dev/kvm` missing — `./scripts/setup-kvm.sh` |
