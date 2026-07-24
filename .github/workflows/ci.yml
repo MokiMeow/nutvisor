@@ -36,7 +36,10 @@ jobs:
           # this user can open it, which is exactly how this step failed before.
           if [ -r /dev/kvm ] && [ -w /dev/kvm ]; then
             echo "/dev/kvm is usable — running the guest for real."
-            out=$(make run)
+            # 2>&1 matters: the guest's own output goes to stdout, but the
+            # VMM's status lines go to stderr. Capturing only stdout silently
+            # loses "halted cleanly" and fails a check that should pass.
+            out=$(make run 2>&1)
             echo "$out"
             echo "$out" | grep -q "guest is alive"
             echo "$out" | grep -q "halted cleanly"
