@@ -56,9 +56,13 @@ Run from the repo root on WSL2 / Linux. The environment needs `/dev/kvm`
 1. `make clean && make all` builds with no warnings.
 2. `make run` runs the guest to completion and prints the expected output.
 3. For headless/CI verification, capture stdout and `grep` for the guest's
-   known output line (this is what `.github/workflows/ci.yml` does — and CI
-   *skips the run* where `/dev/kvm` is absent, because standard GitHub runners
-   have no nested virt; it still builds).
+   known output line (this is what `.github/workflows/ci.yml` does).
+
+**A trap worth knowing:** GitHub's Ubuntu runners *do* ship `/dev/kvm`, but
+root-only — so testing `[ -e /dev/kvm ]` passes and the guest then fails with
+`Permission denied`. Always check `[ -r /dev/kvm ] && [ -w /dev/kvm ]`. CI
+installs a udev rule to open the device up, runs the guest for real, and only
+skips if the device is genuinely unusable.
 
 Never claim a milestone is done without having actually run its guest.
 

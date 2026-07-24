@@ -34,13 +34,25 @@ $(VMM): $(VMM_OBJ)
 $(GUEST_BIN): $(GUEST_SRC) | $(BUILD)
 	$(NASM) -f bin $< -o $@
 
-# Load the KVM module if the device node is missing (needed after a WSL restart).
+# Load the KVM module if the device node is missing (needed after a WSL
+# restart). Note the device *existing* says nothing about whether this user can
+# open it, so check read/write access too — that distinction is what made the
+# guest fail on CI runners, which ship a root-only /dev/kvm.
 check-kvm:
 	@if [ ! -e /dev/kvm ]; then \
 	  echo ">> /dev/kvm missing; loading kvm_intel..."; \
 	  modprobe kvm_intel 2>/dev/null || sudo modprobe kvm_intel 2>/dev/null || true; \
 	fi
-	@test -e /dev/kvm || { echo "ERROR: /dev/kvm unavailable. Run ./scripts/setup-kvm.sh (see docs/01-getting-started.md)."; exit 1; }
+	@test -e /dev/kvm || { \
+	  echo "ERROR: /dev/kvm does not exist. Run ./scripts/setup-kvm.sh"; \
+	  echo "       (see docs/01-getting-started.md for nested-virt requirements)."; \
+	  exit 1; }
+	@{ test -r /dev/kvm && test -w /dev/kvm; } || { \
+	  echo "ERROR: /dev/kvm exists but this user cannot open it."; \
+	  echo "       Fix: sudo usermod -aG kvm $$USER   (then start a new shell),"; \
+	  echo "       or run as root. Current permissions:"; \
+	  ls -l /dev/kvm; \
+	  exit 1; }
 
 run: check-kvm $(VMM) $(GUEST_BIN)
 	$(VMM) $(GUEST_BIN)

@@ -32,5 +32,7 @@ Build a **type-2 VMM on the KVM API**.
 - Requires `/dev/kvm` and nested virtualization (fine on Linux and Windows 11 +
   WSL2; see [docs/01](../01-getting-started.md)).
 - We depend on the Linux KVM ABI (`<linux/kvm.h>`), and nothing else.
-- Standard CI runners lack nested virt, so CI **builds** always but **runs** the
-  guest only where `/dev/kvm` exists.
+- CI **builds** everywhere and **runs the guest wherever `/dev/kvm` is usable**.
+  GitHub's Ubuntu runners do provide the device but root-only, so the workflow
+  installs a udev rule to open it before running; it degrades to a skip (not a
+  failure) only if the device is genuinely unusable.

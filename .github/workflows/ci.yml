@@ -18,13 +18,30 @@ jobs:
       - name: Build VMM and guest
         run: make all
 
-      - name: Run milestone 0 (only where /dev/kvm exists)
+      # GitHub's Ubuntu runners do ship /dev/kvm, but it is root-only by
+      # default, so simply testing that the file exists is not enough — the
+      # runner has to be able to open it. This is the documented workaround.
+      - name: Grant access to /dev/kvm
+        continue-on-error: true
         run: |
-          if [ -e /dev/kvm ]; then
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm || true
+
+      - name: Run the guest (skips only if KVM is genuinely unusable)
+        run: |
+          # -r and -w, not -e: the device existing says nothing about whether
+          # this user can open it, which is exactly how this step failed before.
+          if [ -r /dev/kvm ] && [ -w /dev/kvm ]; then
+            echo "/dev/kvm is usable — running the guest for real."
             out=$(make run)
             echo "$out"
             echo "$out" | grep -q "guest is alive"
+            echo "$out" | grep -q "halted cleanly"
           else
-            echo "SKIP: /dev/kvm is not available on this runner (no nested virt)."
-            echo "The build succeeded; the guest run is verified locally where KVM exists."
+            echo "SKIP: /dev/kvm is present but not usable by this runner."
+            echo "The VMM built successfully; the guest run is verified locally"
+            echo "on a host with nested virtualization (see docs/01-getting-started.md)."
           fi

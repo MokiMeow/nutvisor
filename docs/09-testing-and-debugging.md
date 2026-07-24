@@ -58,4 +58,13 @@ milestone-0 manual check and what CI runs where `/dev/kvm` is available.
 | `FAIL_ENTRY` entering long mode | `efer.LMA`/`cr0.PG`/`cr4.PAE`/`cr3` inconsistent |
 | Guest prints nothing | serial port mismatch, or guest uses a driver that polls LSR |
 | Garbage in guest `.bss` | ELF loader skipped the `p_memsz` zero-fill |
-| `open /dev/kvm` fails | `/dev/kvm` missing — `./scripts/setup-kvm.sh` |
+| `open /dev/kvm: No such file` | module not loaded — `./scripts/setup-kvm.sh` |
+| `open /dev/kvm: Permission denied` | the device exists but this user cannot open it — `sudo usermod -aG kvm $USER`, then a new shell |
+
+### Existence is not access
+
+The most annoying version of that last row: a check like `[ -e /dev/kvm ]`
+succeeds while `open()` still fails with `EACCES`. GitHub's Ubuntu runners are
+exactly this case — the device is there, owned by root. This cost a red CI run
+before the workflow was fixed. Always test `[ -r /dev/kvm ] && [ -w /dev/kvm ]`
+before deciding KVM is available.
