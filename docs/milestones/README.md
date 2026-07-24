@@ -24,7 +24,7 @@ one per pass; keep the build green and the guest running.
   guest and seeing the output.
 - **References** — the canonical sources.
 
-## The Builder's loop (from AGENTS.md)
+## The loop (from AGENTS.md)
 
 1. Pick the lowest-numbered unfinished milestone.
 2. Implement its tasks; keep `make all` clean and `make run` running the guest.

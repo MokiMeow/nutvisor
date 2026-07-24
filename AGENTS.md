@@ -1,21 +1,21 @@
-# AGENTS.md — operating manual for coding agents
+# AGENTS.md — how this repo is built
 
-This file is the source of truth for any AI agent (or human) working on
-nutvisor. Read it fully before making changes. It defines the roles, rules,
+The working agreement for this repository: anyone contributing to nutvisor should
+read it fully before making changes. It defines the roles, rules,
 build/verify commands, and the milestone path from "runs a real-mode guest" to
 "boots a kernel guest." If anything here conflicts with a stray note elsewhere,
 **this file wins.**
 
 ---
 
-## 1. Roles
+## 1. How the work is organised
 
-- **Orchestrator** — plans the work, defines each milestone and its Definition
+- **Planning** — plans the work, defines each milestone and its Definition
   of Done, reviews diffs, keeps docs honest. Decides *what* and *in what order*.
-- **Builder** — implements one milestone at a time against the spec in
+- **Implementation** — proceed one milestone at a time against the spec in
   `docs/milestones/`, keeping the build green and the guest running.
 
-Builder loop: **pick the lowest-numbered unfinished milestone → implement it →
+The loop: **pick the lowest-numbered unfinished milestone → implement it →
 build clean → run it and prove it with real output → tick its Definition of
 Done → update docs/CHANGELOG → commit → stop for review.** One milestone per
 pass. (When explicitly told to build the whole project, proceed through all
