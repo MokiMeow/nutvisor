@@ -2,7 +2,7 @@
 #
 # Quick start (WSL2 / Linux with nested virtualization):
 #   ./scripts/setup-kvm.sh    # ensure /dev/kvm is available (one time per boot)
-#   make run                  # build the VMM + guest and run milestone 0
+#   make run                  # build the VMM + guests and run the current guest
 
 CC     := gcc
 NASM   := nasm
@@ -17,10 +17,12 @@ VMM     := $(BUILD)/nutvisor
 
 GUEST_SRC := guests/hello16.asm
 GUEST_BIN := $(BUILD)/hello16.bin
+SERIAL_GUEST_SRC := guests/serial-driver.asm
+SERIAL_GUEST_BIN := $(BUILD)/serial-driver.bin
 
-.PHONY: all run check-kvm clean
+.PHONY: all run run-hello16 check-kvm clean
 
-all: $(VMM) $(GUEST_BIN)
+all: $(VMM) $(GUEST_BIN) $(SERIAL_GUEST_BIN)
 
 $(BUILD):
 	mkdir -p $(BUILD)
@@ -32,6 +34,9 @@ $(VMM): $(VMM_OBJ)
 	$(CC) $(CFLAGS) -o $@ $(VMM_OBJ)
 
 $(GUEST_BIN): $(GUEST_SRC) | $(BUILD)
+	$(NASM) -f bin $< -o $@
+
+$(SERIAL_GUEST_BIN): $(SERIAL_GUEST_SRC) | $(BUILD)
 	$(NASM) -f bin $< -o $@
 
 # Load the KVM module if the device node is missing (needed after a WSL
@@ -54,7 +59,10 @@ check-kvm:
 	  ls -l /dev/kvm; \
 	  exit 1; }
 
-run: check-kvm $(VMM) $(GUEST_BIN)
+run: check-kvm $(VMM) $(SERIAL_GUEST_BIN)
+	$(VMM) $(SERIAL_GUEST_BIN)
+
+run-hello16: check-kvm $(VMM) $(GUEST_BIN)
 	$(VMM) $(GUEST_BIN)
 
 clean:

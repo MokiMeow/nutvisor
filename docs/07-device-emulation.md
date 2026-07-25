@@ -21,16 +21,17 @@ if (serial_handles_port(port)) {
 }
 ```
 
-A fuller 16550 (milestone 1) also answers reads of the Line Status Register
+A fuller 16550 (milestone 1) answers reads of the Line Status Register
 (`0x3FD`) with "ready" so a guest's *driver* — which polls LSR before writing —
-works, and accepts the config writes (LCR/IER/FIFO) as no-ops. A real kernel
+works, tracks DLAB/divisor, LCR, IER, FIFO, modem-control, and scratch-register
+writes, and keeps configuration bytes from leaking to host output. A real kernel
 guest uses a driver, not raw `out`s, so this matters once the guest is Nutshell.
 
 ### The dispatch table (milestone 1)
 
-Instead of an `if` per device, register `{port_range, in_fn, out_fn}` entries
-and let `vm.c` route each I/O exit to the owning device. This is how you add a
-second port device cleanly.
+`src/ioport.c` owns a table of `{base, size, access_size, in_fn, out_fn}`
+entries. The vCPU loop calls the generic router, so adding another port device
+only requires registering its range and callbacks; `vm.c` remains unchanged.
 
 ## Memory-mapped devices (MMIO, milestone 3)
 
