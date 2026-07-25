@@ -6,6 +6,7 @@
 
 CC     := gcc
 NASM   := nasm
+LD     := ld
 # gnu11 (not c11) so POSIX/Linux symbols like O_CLOEXEC and MAP_ANONYMOUS from
 # <fcntl.h>/<sys/mman.h> are visible without hand-rolling feature-test macros.
 CFLAGS := -std=gnu11 -Wall -Wextra -Iinclude -O2
@@ -23,10 +24,13 @@ LONG_GUEST_SRC := guests/hello64.asm
 LONG_GUEST_BIN := $(BUILD)/hello64.bin
 MMIO_GUEST_SRC := guests/mmio-demo.asm
 MMIO_GUEST_BIN := $(BUILD)/mmio-demo.bin
+KERNEL_SRC := guests/kernel/entry.asm
+KERNEL_OBJ := $(BUILD)/kernel-entry.o
+KERNEL_ELF := guests/kernel/kernel.elf
 
-.PHONY: all run run-long run-serial run-hello16 check-kvm clean
+.PHONY: all run run-mmio run-long run-serial run-hello16 check-kvm clean
 
-all: $(VMM) $(GUEST_BIN) $(SERIAL_GUEST_BIN) $(LONG_GUEST_BIN) $(MMIO_GUEST_BIN)
+all: $(VMM) $(GUEST_BIN) $(SERIAL_GUEST_BIN) $(LONG_GUEST_BIN) $(MMIO_GUEST_BIN) $(KERNEL_ELF)
 
 $(BUILD):
 	mkdir -p $(BUILD)
@@ -49,6 +53,13 @@ $(LONG_GUEST_BIN): $(LONG_GUEST_SRC) | $(BUILD)
 $(MMIO_GUEST_BIN): $(MMIO_GUEST_SRC) | $(BUILD)
 	$(NASM) -f bin $< -o $@
 
+$(KERNEL_OBJ): $(KERNEL_SRC) | $(BUILD)
+	$(NASM) -f elf64 $< -o $@
+
+$(KERNEL_ELF): $(KERNEL_OBJ) guests/kernel/linker.ld
+	$(LD) -nostdlib -z max-page-size=0x1000 -T guests/kernel/linker.ld \
+		-o $@ $(KERNEL_OBJ)
+
 # Load the KVM module if the device node is missing (needed after a WSL
 # restart). Note the device *existing* says nothing about whether this user can
 # open it, so check read/write access too — that distinction is what made the
@@ -69,7 +80,10 @@ check-kvm:
 	  ls -l /dev/kvm; \
 	  exit 1; }
 
-run: check-kvm $(VMM) $(MMIO_GUEST_BIN)
+run: check-kvm $(VMM) $(KERNEL_ELF)
+	$(VMM) $(KERNEL_ELF)
+
+run-mmio: check-kvm $(VMM) $(MMIO_GUEST_BIN)
 	$(VMM) --long $(MMIO_GUEST_BIN)
 
 run-long: check-kvm $(VMM) $(LONG_GUEST_BIN)
@@ -82,4 +96,4 @@ run-hello16: check-kvm $(VMM) $(GUEST_BIN)
 	$(VMM) --real $(GUEST_BIN)
 
 clean:
-	rm -rf $(BUILD)
+	rm -rf $(BUILD) $(KERNEL_ELF)

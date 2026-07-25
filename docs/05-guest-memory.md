@@ -37,7 +37,7 @@ range. v1 uses one slot for all of low RAM. You'd add slots for:
 |-----------|--------------|
 | M0 | 1 MiB flat; guest blob at `0x1000`, real mode |
 | M2 | 64 MiB RAM; flat guest at `0x100000`; paging at `0x2000`–`0x4fff`, GDT at `0x5000`, stack at `0x800000` |
-| M4 | ELF `PT_LOAD` segments copied to their `p_paddr`; entry at `e_entry` |
+| M4 | ELF `PT_LOAD` segments copied to validated `p_paddr` ranges; zero-filled `.bss`; entry at executable `e_entry` |
 
 ## Gotchas
 

@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "loader.h"
 #include "vmm.h"
 
 #define REAL_GUEST_LOAD_ADDR 0x1000ULL
@@ -13,7 +14,16 @@
 enum guest_mode {
     GUEST_MODE_REAL,
     GUEST_MODE_LONG,
+    GUEST_MODE_ELF,
 };
+
+static int has_suffix(const char *text, const char *suffix) {
+    size_t text_len = strlen(text);
+    size_t suffix_len = strlen(suffix);
+
+    return text_len >= suffix_len
+        && strcmp(text + text_len - suffix_len, suffix) == 0;
+}
 
 static long read_file(const char *path, unsigned char **out) {
     FILE *f = fopen(path, "rb");
@@ -60,21 +70,26 @@ static long read_file(const char *path, unsigned char **out) {
 }
 
 int main(int argc, char **argv) {
-    const char *path = "build/hello64.bin";
-    enum guest_mode mode = GUEST_MODE_LONG;
+    const char *path = "guests/kernel/kernel.elf";
+    enum guest_mode mode = GUEST_MODE_ELF;
 
     if (argc == 2) {
-        /* Preserve the milestone-0 interface for explicit flat binaries. */
         path = argv[1];
-        mode = GUEST_MODE_REAL;
+        mode = has_suffix(path, ".elf") ? GUEST_MODE_ELF : GUEST_MODE_REAL;
     } else if (argc == 3
             && (strcmp(argv[1], "--real") == 0
-                || strcmp(argv[1], "--long") == 0)) {
-        mode = strcmp(argv[1], "--long") == 0
-            ? GUEST_MODE_LONG : GUEST_MODE_REAL;
+                || strcmp(argv[1], "--long") == 0
+                || strcmp(argv[1], "--elf") == 0)) {
+        if (strcmp(argv[1], "--elf") == 0)
+            mode = GUEST_MODE_ELF;
+        else if (strcmp(argv[1], "--long") == 0)
+            mode = GUEST_MODE_LONG;
+        else
+            mode = GUEST_MODE_REAL;
         path = argv[2];
     } else if (argc != 1) {
-        fprintf(stderr, "usage: %s [--real|--long] [guest-image]\n", argv[0]);
+        fprintf(stderr, "usage: %s [--real|--long|--elf] [guest-image]\n",
+                argv[0]);
         return 2;
     }
 
@@ -86,14 +101,27 @@ int main(int argc, char **argv) {
         return 1;
 
     struct vm vm;
-    int rc = 1;
-    if (vm_create(&vm, GUEST_MEM_SIZE) == 0
-            && vm_load_guest(&vm, load_addr, code, (size_t)len) == 0
-            && (mode == GUEST_MODE_LONG
-                ? vm_set_long_mode(&vm, load_addr)
-                : vm_set_real_mode(&vm, load_addr)) == 0) {
-        fprintf(stderr, "nutvisor: running %s (%ld bytes) in %s mode\n",
-                path, len, mode == GUEST_MODE_LONG ? "64-bit long" : "16-bit real");
+    int rc = VM_RUN_ERROR;
+    uint64_t entry = load_addr;
+    int loaded = -1;
+
+    if (vm_create(&vm, GUEST_MEM_SIZE) == 0) {
+        if (mode == GUEST_MODE_ELF)
+            loaded = elf64_load(&vm, code, (size_t)len, &entry);
+        else
+            loaded = vm_load_guest(&vm, load_addr, code, (size_t)len);
+    }
+
+    if (loaded == 0
+            && (mode == GUEST_MODE_REAL
+                ? vm_set_real_mode(&vm, entry)
+                : vm_set_long_mode(&vm, entry)) == 0) {
+        const char *mode_name = mode == GUEST_MODE_REAL
+            ? "16-bit real" : "64-bit long";
+
+        fprintf(stderr, "nutvisor: running %s (%ld bytes) in %s mode%s\n",
+                path, len, mode_name,
+                mode == GUEST_MODE_ELF ? " from ELF" : "");
         rc = vm_run(&vm);
         if (rc == VM_RUN_HALTED)
             fprintf(stderr, "nutvisor: guest halted cleanly\n");

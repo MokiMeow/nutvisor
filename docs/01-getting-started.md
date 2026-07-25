@@ -49,14 +49,13 @@ This builds `build/nutvisor` and all guest images, ensures
 `/dev/kvm`, and runs the guest. Expected output:
 
 ```
-nutvisor: running build/mmio-demo.bin (...) in 64-bit long mode
-nutvisor: mmio console online
-nutvisor: guest requested exit status=0
-nutvisor: guest exited cleanly
+nutvisor: running guests/kernel/kernel.elf (...) in 64-bit long mode from ELF
+nutvisor: elf64 kernel online
+nutvisor: guest halted cleanly
 ```
 
-The MMIO marker is printed *by the 64-bit guest* through an emulated memory-
-mapped console; the same guest then stops through the MMIO exit register.
+The middle line is printed *by an ELF64 guest kernel* after verifying that its
+`.bss` was zero-filled by the VMM.
 
 ## 4. Running a different guest
 
@@ -66,16 +65,19 @@ mapped console; the same guest then stops through the MMIO exit register.
 make all
 ./build/nutvisor --long build/hello64.bin
 ./build/nutvisor --real build/hello16.bin
+./build/nutvisor --elf guests/kernel/kernel.elf
 ```
 
-An explicit image without a mode flag retains the original real-mode interface.
+Files ending in `.elf` are loaded as ELF64 automatically. Other explicit images
+retain the original real-mode interface unless `--long` is supplied.
 
 ## 5. Make targets
 
 | Command | Purpose |
 |---------|---------|
 | `make all` | Build the VMM and guest image(s). |
-| `make run` | Ensure `/dev/kvm`, build, and run the MMIO guest. |
+| `make run` | Ensure `/dev/kvm`, build, and run the ELF64 kernel guest. |
+| `make run-mmio` | Run the milestone-3 MMIO guest. |
 | `make run-long` | Run the milestone-2 long-mode serial guest. |
 | `make run-serial` | Run the milestone-1 UART-driver guest. |
 | `make run-hello16` | Run the original milestone-0 guest. |

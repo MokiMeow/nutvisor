@@ -1,4 +1,4 @@
-# Milestone 4 — ELF64 guest loader
+# Milestone 4 — ELF64 guest loader ✅ (done)
 
 **Goal:** load a 64-bit ELF kernel image from a file into guest memory and boot
 it — the "I wrote the VM and the OS it runs" milestone.
@@ -11,14 +11,14 @@ The ELF64 header and program headers, `PT_LOAD` segments (`p_offset`,
 
 ## Tasks
 
-- [ ] `src/loader.c` + `include/loader.h`: parse an ELF64 file — validate the
+- [x] `src/loader.c` + `include/loader.h`: parse an ELF64 file — validate the
       magic, 64-bit class, and x86-64 machine; iterate program headers.
-- [ ] For each `PT_LOAD`: `memcpy` `p_filesz` bytes to `mem + p_paddr`, then
+- [x] For each `PT_LOAD`: `memcpy` `p_filesz` bytes to `mem + p_paddr`, then
       zero-fill up to `p_memsz` (the guest's `.bss`).
-- [ ] Validate every segment fits in guest memory and `e_entry` lands in a
+- [x] Validate every segment fits in guest memory and `e_entry` lands in a
       loaded segment; refuse malformed images.
-- [ ] Bring the guest up in long mode (milestone 2) with `rip = e_entry`.
-- [ ] Write a small 64-bit ELF **guest kernel** (`guests/kernel/`) that prints
+- [x] Bring the guest up in long mode (milestone 2) with `rip = e_entry`.
+- [x] Write a small 64-bit ELF **guest kernel** (`guests/kernel/`) that prints
       via the serial device and halts, and boot it through the loader.
 
 ## Files
@@ -28,10 +28,10 @@ The ELF64 header and program headers, `PT_LOAD` segments (`p_offset`,
 
 ## Definition of Done
 
-- [ ] `./build/nutvisor guests/kernel/kernel.elf` loads and runs the guest
+- [x] `./build/nutvisor guests/kernel/kernel.elf` loads and runs the guest
       kernel, which prints its output through the emulated serial and halts.
-- [ ] Malformed ELF inputs are rejected with a clear message, not a crash.
-- [ ] `make all` clean; earlier guests still run.
+- [x] Malformed ELF inputs are rejected with a clear message, not a crash.
+- [x] `make all` clean; earlier guests still run.
 
 ## References
 

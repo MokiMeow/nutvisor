@@ -57,16 +57,15 @@ it runs."*
 
 ```bash
 ./scripts/setup-kvm.sh   # ensure /dev/kvm is available (loads the module)
-make run                 # build the VMM + guests and run the MMIO guest
+make run                 # build the VMM + guests and boot the ELF64 kernel
 ```
 
 Expected output:
 
 ```
-nutvisor: running build/mmio-demo.bin (...) in 64-bit long mode
-nutvisor: mmio console online
-nutvisor: guest requested exit status=0
-nutvisor: guest exited cleanly
+nutvisor: running guests/kernel/kernel.elf (...) in 64-bit long mode from ELF
+nutvisor: elf64 kernel online
+nutvisor: guest halted cleanly
 ```
 
 That line came *from inside a VM your program created*. See
@@ -75,9 +74,9 @@ requirements (Windows 11 + WSL2 exposes VT-x by default).
 
 ## Status
 
-Milestones 0–3 are complete: the VMM runs real- and long-mode guests with
-port-I/O and MMIO device dispatch, including a memory-mapped console and exit
-device. The road to booting a full kernel guest is
+Milestones 0–4 are complete: nutvisor validates and loads an ELF64 kernel,
+zero-fills its `.bss`, enters at its executable entry point in long mode, and
+services its emulated devices. The remaining work hardens and packages it.
 tracked in [docs/04-roadmap.md](docs/04-roadmap.md).
 
 | # | Milestone | State |
@@ -86,7 +85,7 @@ tracked in [docs/04-roadmap.md](docs/04-roadmap.md).
 | 1 | Serial device model + port-I/O dispatch | ✅ done |
 | 2 | 64-bit long-mode guest (GDT + paging setup) | ✅ done |
 | 3 | Memory-mapped I/O device emulation | ✅ done |
-| 4 | ELF64 guest loader (boot a kernel from a file) | ⬜ |
+| 4 | ELF64 guest loader (boot a kernel from a file) | ✅ done |
 | 5 | CPUID filtering + robust exit handling | ⬜ |
 | 6 | Tests, CI, demo, `v1.0.0` (stretch: boot Nutshell) | ⬜ |
 
