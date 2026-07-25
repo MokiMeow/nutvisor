@@ -49,14 +49,15 @@ Run from the repo root on WSL2 / Linux. The environment needs `/dev/kvm`
 |---------|--------------|
 | `./scripts/setup-kvm.sh` | Ensure `/dev/kvm` exists (loads the KVM module). |
 | `make all` | Build `build/nutvisor` and the guest image(s). |
+| `make test` | Run the complete guest and failure-path regression suite. |
 | `make run` | Build, ensure `/dev/kvm`, and run the current guest. |
 | `make clean` | Remove `build/`. |
 
 **Definition of "it works" for any change:**
 1. `make clean && make all` builds with no warnings.
 2. `make run` runs the guest to completion and prints the expected output.
-3. For headless/CI verification, capture stdout and `grep` for the guest's
-   known output line (this is what `.github/workflows/ci.yml` does).
+3. `make test` passes every success and deliberate-failure assertion (this is
+   what `.github/workflows/ci.yml` runs where KVM is usable).
 
 **A trap worth knowing:** GitHub's Ubuntu runners *do* ship `/dev/kvm`, but
 root-only — so testing `[ -e /dev/kvm ]` passes and the guest then fails with
@@ -94,12 +95,12 @@ Full specs with Definition of Done live in `docs/milestones/`.
 | # | Milestone | Adds | Spec |
 |---|-----------|------|------|
 | 0 | KVM hello | VM/vCPU/memory, real-mode guest, serial + HLT exits | [spec](docs/milestones/milestone-0-kvm-hello.md) ✅ |
-| 1 | Serial | port-I/O dispatch table, fuller 16550, guest-from-file | [spec](docs/milestones/milestone-1-serial.md) |
-| 2 | Long mode | GDT + page tables in guest memory, 64-bit sregs | [spec](docs/milestones/milestone-2-longmode.md) |
-| 3 | MMIO | `KVM_EXIT_MMIO` handling + a memory-mapped device | [spec](docs/milestones/milestone-3-mmio.md) |
-| 4 | ELF loader | parse ELF64, load PT_LOAD segments, jump to entry | [spec](docs/milestones/milestone-4-elf-loader.md) |
-| 5 | CPUID/robustness | `KVM_SET_CPUID2`, clean handling of every exit reason | [spec](docs/milestones/milestone-5-cpuid-robustness.md) |
-| 6 | Polish | self-test, CI, demo, tag `v1.0.0` | [spec](docs/milestones/milestone-6-polish.md) |
+| 1 | Serial | port-I/O dispatch table, fuller 16550, guest-from-file | [spec](docs/milestones/milestone-1-serial.md) ✅ |
+| 2 | Long mode | GDT + page tables in guest memory, 64-bit sregs | [spec](docs/milestones/milestone-2-longmode.md) ✅ |
+| 3 | MMIO | `KVM_EXIT_MMIO` handling + a memory-mapped device | [spec](docs/milestones/milestone-3-mmio.md) ✅ |
+| 4 | ELF loader | parse ELF64, load PT_LOAD segments, jump to entry | [spec](docs/milestones/milestone-4-elf-loader.md) ✅ |
+| 5 | CPUID/robustness | `KVM_SET_CPUID2`, clean handling of every exit reason | [spec](docs/milestones/milestone-5-cpuid-robustness.md) ✅ |
+| 6 | Polish | self-test, CI, demo, tag `v1.0.0` | [spec](docs/milestones/milestone-6-polish.md) ✅ |
 
 **Definition of Done (whole project):** nutvisor boots a 64-bit ELF guest kernel
 that runs and produces output through the emulated devices. Stretch goal: boot

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="330" viewBox="0 0 960 330" role="img" aria-labelledby="title desc">
+  <title id="title">nutvisor boots an ELF64 guest kernel</title>
+  <desc id="desc">Terminal output showing CPUID setup, ELF64 guest execution, guest markers, and a clean halt.</desc>
+  <rect width="960" height="330" rx="14" fill="#0d1117"/>
+  <rect width="960" height="42" rx="14" fill="#161b22"/>
+  <rect y="28" width="960" height="14" fill="#161b22"/>
+  <circle cx="24" cy="21" r="6" fill="#ff5f56"/>
+  <circle cx="44" cy="21" r="6" fill="#ffbd2e"/>
+  <circle cx="64" cy="21" r="6" fill="#27c93f"/>
+  <text x="480" y="27" text-anchor="middle" fill="#8b949e" font-family="ui-monospace, monospace" font-size="14">nutvisor — KVM guest boot</text>
+  <g font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="17">
+    <text x="24" y="76" fill="#7ee787">$ make run</text>
+    <text x="24" y="112" fill="#c9d1d9">build/nutvisor guests/kernel/kernel.elf</text>
+    <text x="24" y="148" fill="#8b949e">nutvisor: installed 48 CPUID entries</text>
+    <text x="24" y="184" fill="#8b949e">nutvisor: running kernel.elf in 64-bit long mode from ELF</text>
+    <text x="24" y="220" fill="#58a6ff">nutvisor: cpuid online</text>
+    <text x="24" y="256" fill="#58a6ff">nutvisor: elf64 kernel online</text>
+    <text x="24" y="292" fill="#7ee787">nutvisor: guest halted cleanly</text>
+  </g>
+</svg>

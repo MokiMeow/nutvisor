@@ -12,7 +12,7 @@ one per pass; keep the build green and the guest running.
 | 3 | [MMIO device](milestone-3-mmio.md) | ✅ done |
 | 4 | [ELF64 guest loader](milestone-4-elf-loader.md) | ✅ done |
 | 5 | [CPUID + robustness](milestone-5-cpuid-robustness.md) | ✅ done |
-| 6 | [Polish](milestone-6-polish.md) | ⬜ |
+| 6 | [Polish](milestone-6-polish.md) | ✅ done |
 
 ## Every milestone spec has
 

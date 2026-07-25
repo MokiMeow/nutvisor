@@ -6,12 +6,12 @@ nutvisor is a type-2 hypervisor — a Virtual Machine Monitor (VMM) — written 
 scratch in C. It uses the Linux **KVM** API to run guest code directly on the
 CPU's hardware virtualization (Intel VT-x), and it emulates the small amount of
 "hardware" the guest expects (a serial port, memory-mapped devices) in host
-software. Its goal is to load and boot a small operating system as its guest.
+software. The v1 release loads and boots a purpose-built ELF64 kernel.
 
 ## The one-sentence idea
 
 > Create a virtual machine with the KVM API, run guest code on the real CPU, and
-> service every VM exit the guest triggers — until the guest is a booting kernel.
+> service every VM exit the guest triggers while an ELF64 kernel boots.
 
 ## Type-2, using KVM — and why that's still deep
 
@@ -50,14 +50,15 @@ virtualization is actually built in practice. See
 
 ```
  nutvisor (host process)
-   ├─ vm.c        open /dev/kvm, KVM_CREATE_VM, guest memory, vCPU, KVM_RUN loop
-   ├─ serial.c    COM1 device: guest port I/O -> host stdout        (M0, M1)
-   ├─ mmio.c      memory-mapped device(s)                           (M3)
-   ├─ loader.c    ELF64 image -> guest memory                       (M4)
-   └─ main.c      load a guest, choose its CPU mode, run it
+   ├─ vm.c        KVM lifecycle, CPU modes, exit loop, diagnostics
+   ├─ cpuid.c     KVM-supported CPUID table -> vCPU
+   ├─ ioport.c    port-range dispatch -> serial.c (16550 COM1)
+   ├─ mmio.c      memory-mapped debug console + exit device
+   ├─ loader.c    validated ELF64 PT_LOAD segments -> guest memory
+   └─ main.c      choose image format / CPU mode and orchestrate
         │
         ▼
-   guest: real-mode blob (M0) -> long-mode program (M2) -> a kernel (M4+)
+   guest: regression blobs + the ELF64 kernel in guests/kernel/
 ```
 
 Read the [architecture doc](02-architecture.md) next, or jump to

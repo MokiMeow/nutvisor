@@ -30,9 +30,12 @@ KERNEL_SRC := guests/kernel/entry.asm
 KERNEL_OBJ := $(BUILD)/kernel-entry.o
 KERNEL_ELF := guests/kernel/kernel.elf
 
-.PHONY: all run run-fault run-mmio run-long run-serial run-hello16 check-kvm clean
+.PHONY: all test run run-fault run-mmio run-long run-serial run-hello16 check-kvm clean
 
 all: $(VMM) $(GUEST_BIN) $(SERIAL_GUEST_BIN) $(LONG_GUEST_BIN) $(MMIO_GUEST_BIN) $(FAULT_GUEST_BIN) $(KERNEL_ELF)
+
+test: check-kvm all
+	./scripts/self-test.sh
 
 $(BUILD):
 	mkdir -p $(BUILD)

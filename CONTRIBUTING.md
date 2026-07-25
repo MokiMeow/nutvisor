@@ -16,8 +16,8 @@ welcome.
 1. Pick the lowest-numbered unfinished milestone in
    [docs/milestones/](docs/milestones/).
 2. Branch from `main`: `git checkout -b milestone-2-longmode`.
-3. Implement it. Keep the build green (`make clean && make all`) and the guest
-   running (`make run`) at every commit.
+3. Implement it. Keep the build green (`make clean && make all`) and the full
+   guest regression suite passing (`make test`) at every commit.
 4. Update the relevant doc and tick the Definition of Done.
 5. Open a PR into `main`. CI must be green (CI builds always; it runs the guest
    only where `/dev/kvm` exists).
