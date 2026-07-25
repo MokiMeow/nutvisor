@@ -13,7 +13,7 @@ spec and a Definition of Done in [milestones/](milestones/).
 | 2 | **Long mode** ✅ | GDT + page tables in guest memory, 64-bit sregs | real→long mode, guest paging |
 | 3 | **MMIO** ✅ | `KVM_EXIT_MMIO` handling + a mapped device | memory-mapped I/O |
 | 4 | **ELF loader** ✅ | parse ELF64, load segments, jump to entry | ELF, guest memory layout |
-| 5 | **CPUID / robustness** | `KVM_SET_CPUID2`, every exit reason handled | CPUID, VM-exit completeness |
+| 5 | **CPUID / robustness** ✅ | `KVM_SET_CPUID2`, every exit reason handled | CPUID, VM-exit completeness |
 | 6 | **Polish** | self-test, CI, demo, tag `v1.0.0` | verification, presentation |
 
 ## Dependency order

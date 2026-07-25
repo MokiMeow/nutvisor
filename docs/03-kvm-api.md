@@ -2,7 +2,7 @@
 
 This is the API the whole project is built on. It is a set of `ioctl`s on three
 file descriptors: the KVM subsystem, a VM, and a vCPU. This doc explains the
-sequence nutvisor already uses (milestone 0) and the exits later milestones add.
+complete bring-up and exit path used by nutvisor.
 
 ## The three file descriptors
 
@@ -26,11 +26,13 @@ open("/dev/kvm")  ── the KVM subsystem (system-wide)
    `ioctl(vm, KVM_SET_USER_MEMORY_REGION, &region)` to map it at a chosen
    guest-physical address (0 for us). The guest's RAM *is* that host mapping.
 5. **`ioctl(vm, KVM_CREATE_VCPU)`** → `vcpu_fd`.
-6. **The shared run structure**: `ioctl(kvm, KVM_GET_VCPU_MMAP_SIZE)` then
+6. **Guest CPUID**: dynamically fetch `KVM_GET_SUPPORTED_CPUID` from the KVM
+   fd and install the complete table with `KVM_SET_CPUID2` on the vCPU.
+7. **The shared run structure**: `ioctl(kvm, KVM_GET_VCPU_MMAP_SIZE)` then
    `mmap(vcpu_fd)` gives a `struct kvm_run` the kernel updates on every exit.
-7. **Initial CPU state**: `KVM_GET_SREGS`/`KVM_SET_SREGS` for segments and
+8. **Initial CPU state**: `KVM_GET_SREGS`/`KVM_SET_SREGS` for segments and
    control registers, `KVM_SET_REGS` for `rip`, `rsp`, `rflags`, GP registers.
-8. **Run**: `ioctl(vcpu, KVM_RUN)` in a loop, dispatching on
+9. **Run**: `ioctl(vcpu, KVM_RUN)` in a loop, dispatching on
    `run->exit_reason`.
 
 ## The VM-exit loop
@@ -46,6 +48,11 @@ tells you what:
 | `KVM_EXIT_SHUTDOWN` | triple fault / reset | reported |
 | `KVM_EXIT_FAIL_ENTRY` | CPU couldn't enter the guest | reported |
 | `KVM_EXIT_INTERNAL_ERROR` | KVM couldn't emulate something | reported |
+| `KVM_EXIT_DEBUG` | guest debug/single-step exit | reported with state |
+| `KVM_EXIT_EXCEPTION` | userspace-visible exception | reported with state |
+
+All other values are explicitly reported by number and accompanied by a
+register/control-state dump. Nothing falls through silently.
 
 ### Reading an I/O exit
 

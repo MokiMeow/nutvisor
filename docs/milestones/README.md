@@ -11,7 +11,7 @@ one per pass; keep the build green and the guest running.
 | 2 | [Long-mode guest](milestone-2-longmode.md) | ✅ done |
 | 3 | [MMIO device](milestone-3-mmio.md) | ✅ done |
 | 4 | [ELF64 guest loader](milestone-4-elf-loader.md) | ✅ done |
-| 5 | [CPUID + robustness](milestone-5-cpuid-robustness.md) | ⬜ |
+| 5 | [CPUID + robustness](milestone-5-cpuid-robustness.md) | ✅ done |
 | 6 | [Polish](milestone-6-polish.md) | ⬜ |
 
 ## Every milestone spec has

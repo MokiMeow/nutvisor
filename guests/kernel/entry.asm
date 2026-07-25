@@ -13,6 +13,13 @@ global _start
 %define COM1 0x3F8
 
 _start:
+    xor eax, eax
+    cpuid
+    test eax, eax
+    jz .cpuid_failed
+    mov rsi, cpuid_message
+    call serial_print
+
     cmp qword [bss_probe], 0
     jne .bss_failed
     mov rsi, message
@@ -24,6 +31,13 @@ _start:
     call serial_print
     mov rdi, 0x10000008
     mov dword [rdi], 1
+    hlt
+
+.cpuid_failed:
+    mov rsi, cpuid_failure
+    call serial_print
+    mov rdi, 0x10000008
+    mov dword [rdi], 2
     hlt
 
 serial_print:
@@ -44,10 +58,14 @@ serial_print:
     ret
 
 section .rodata
+cpuid_message:
+    db "nutvisor: cpuid online", 0x0A, 0
 message:
     db "nutvisor: elf64 kernel online", 0x0A, 0
 bss_failure:
     db "nutvisor: ELF bss zero-fill failed", 0x0A, 0
+cpuid_failure:
+    db "nutvisor: CPUID setup failed", 0x0A, 0
 
 section .bss
 align 8

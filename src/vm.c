@@ -13,6 +13,7 @@
 #include <sys/mman.h>
 #include <linux/kvm.h>
 
+#include "cpuid.h"
 #include "ioport.h"
 #include "mmio.h"
 #include "serial.h"
@@ -82,6 +83,8 @@ int vm_create(struct vm *vm, size_t mem_size) {
 
     vm->vcpu_fd = ioctl(vm->vm_fd, KVM_CREATE_VCPU, 0);
     if (vm->vcpu_fd < 0) { perror("KVM_CREATE_VCPU"); return -1; }
+    if (cpuid_setup(vm) < 0)
+        return -1;
 
     int run_size = ioctl(vm->kvm_fd, KVM_GET_VCPU_MMAP_SIZE, 0);
     if (run_size < 0) { perror("KVM_GET_VCPU_MMAP_SIZE"); return -1; }
@@ -244,6 +247,35 @@ int vm_set_long_mode(struct vm *vm, uint64_t entry) {
     return 0;
 }
 
+static void vm_dump_registers(struct vm *vm) {
+    struct kvm_regs regs;
+    struct kvm_sregs sregs;
+
+    if (ioctl(vm->vcpu_fd, KVM_GET_REGS, &regs) < 0) {
+        perror("KVM_GET_REGS while dumping state");
+        return;
+    }
+    if (ioctl(vm->vcpu_fd, KVM_GET_SREGS, &sregs) < 0) {
+        perror("KVM_GET_SREGS while dumping state");
+        return;
+    }
+
+    fprintf(stderr,
+            "registers: rip=0x%llx rsp=0x%llx rflags=0x%llx "
+            "cs=0x%x base=0x%llx\n",
+            (unsigned long long)regs.rip,
+            (unsigned long long)regs.rsp,
+            (unsigned long long)regs.rflags,
+            sregs.cs.selector,
+            (unsigned long long)sregs.cs.base);
+    fprintf(stderr,
+            "control: cr0=0x%llx cr3=0x%llx cr4=0x%llx efer=0x%llx\n",
+            (unsigned long long)sregs.cr0,
+            (unsigned long long)sregs.cr3,
+            (unsigned long long)sregs.cr4,
+            (unsigned long long)sregs.efer);
+}
+
 int vm_run(struct vm *vm) {
     for (;;) {
         if (ioctl(vm->vcpu_fd, KVM_RUN, 0) < 0) {
@@ -314,22 +346,38 @@ int vm_run(struct vm *vm) {
 
         case KVM_EXIT_SHUTDOWN:
             fprintf(stderr, "guest shutdown (triple fault?)\n");
+            vm_dump_registers(vm);
             return -1;
 
         case KVM_EXIT_FAIL_ENTRY:
             fprintf(stderr, "KVM_EXIT_FAIL_ENTRY reason=0x%llx\n",
                     (unsigned long long)
                         vm->run->fail_entry.hardware_entry_failure_reason);
+            vm_dump_registers(vm);
             return -1;
 
         case KVM_EXIT_INTERNAL_ERROR:
-            fprintf(stderr, "KVM internal error suberror=%u\n",
-                    vm->run->internal.suberror);
+            fprintf(stderr, "KVM internal error suberror=%u data-count=%u\n",
+                    vm->run->internal.suberror, vm->run->internal.ndata);
+            vm_dump_registers(vm);
+            return -1;
+
+        case KVM_EXIT_DEBUG:
+            fprintf(stderr, "KVM_EXIT_DEBUG at pc=0x%llx\n",
+                    (unsigned long long)vm->run->debug.arch.pc);
+            vm_dump_registers(vm);
+            return -1;
+
+        case KVM_EXIT_EXCEPTION:
+            fprintf(stderr, "KVM_EXIT_EXCEPTION vector=%u error=0x%x\n",
+                    vm->run->ex.exception, vm->run->ex.error_code);
+            vm_dump_registers(vm);
             return -1;
 
         default:
-            fprintf(stderr, "unhandled exit_reason=%u\n",
+            fprintf(stderr, "unsupported KVM exit_reason=%u\n",
                     vm->run->exit_reason);
+            vm_dump_registers(vm);
             return -1;
         }
     }

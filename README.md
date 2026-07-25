@@ -64,6 +64,7 @@ Expected output:
 
 ```
 nutvisor: running guests/kernel/kernel.elf (...) in 64-bit long mode from ELF
+nutvisor: cpuid online
 nutvisor: elf64 kernel online
 nutvisor: guest halted cleanly
 ```
@@ -74,9 +75,10 @@ requirements (Windows 11 + WSL2 exposes VT-x by default).
 
 ## Status
 
-Milestones 0–4 are complete: nutvisor validates and loads an ELF64 kernel,
-zero-fills its `.bss`, enters at its executable entry point in long mode, and
-services its emulated devices. The remaining work hardens and packages it.
+Milestones 0–5 are complete: nutvisor installs a coherent KVM CPUID table,
+validates and loads an ELF64 kernel, enters it in long mode, services its
+devices, and emits full state for every failure exit. Only the release polish
+remains.
 tracked in [docs/04-roadmap.md](docs/04-roadmap.md).
 
 | # | Milestone | State |
@@ -86,7 +88,7 @@ tracked in [docs/04-roadmap.md](docs/04-roadmap.md).
 | 2 | 64-bit long-mode guest (GDT + paging setup) | ✅ done |
 | 3 | Memory-mapped I/O device emulation | ✅ done |
 | 4 | ELF64 guest loader (boot a kernel from a file) | ✅ done |
-| 5 | CPUID filtering + robust exit handling | ⬜ |
+| 5 | CPUID filtering + robust exit handling | ✅ done |
 | 6 | Tests, CI, demo, `v1.0.0` (stretch: boot Nutshell) | ⬜ |
 
 ## Repository layout
