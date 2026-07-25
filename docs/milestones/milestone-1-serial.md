@@ -15,8 +15,8 @@ and a device-dispatch table so `vm.c` doesn't grow an `if` per device.
 - [x] Expand `serial.c` to a fuller COM1: honour the data register for output,
       return the Line Status Register (`0x3FD`) as "transmit ready", and accept
       LCR/IER/FIFO-control writes as no-ops (so a real driver's setup succeeds).
-- [ ] (Optional) feed host stdin to the guest via the receive register + LSR
-      data-ready bit, so an interactive guest can read input.
+- **Deferred optional (post-v1):** feed host stdin to the guest via the receive
+  register + LSR data-ready bit, so an interactive guest can read input.
 - [x] Add a guest (`guests/serial-driver.asm` or C) that programs the UART like
       a driver would (poll LSR, then write) and prints a message — proving the
       model, not just raw `out`.

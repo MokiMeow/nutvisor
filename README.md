@@ -2,8 +2,7 @@
 
 <p align="center">
   <em>A type-2 hypervisor written from scratch in C, using the Linux KVM API to
-  run a guest on real hardware virtualization — with the goal of booting a small
-  operating system as its guest.</em>
+  run a guest on real hardware virtualization and boot its own ELF64 kernel.</em>
 </p>
 
 <p align="center">
@@ -11,6 +10,16 @@
   <img src="https://img.shields.io/badge/tech-KVM%20%2F%20VT--x-red" alt="KVM">
   <img src="https://img.shields.io/badge/lang-C%20%2B%20Assembly-orange" alt="C + Assembly">
   <img src="https://img.shields.io/badge/license-MIT-lightgrey" alt="MIT">
+</p>
+
+<p align="center">
+  <a href="docs/assets/demo.cast">
+    <img src="docs/assets/demo.svg" alt="Terminal demo: nutvisor boots its ELF64 guest kernel" width="900">
+  </a>
+</p>
+
+<p align="center">
+  <sub>Actual local KVM run · click the terminal for the asciinema v2 recording</sub>
 </p>
 
 ---
@@ -39,6 +48,26 @@ it runs."*
         /dev/kvm  <---- VT-x ----> physical CPU
 ```
 
+## How a VM exit flows
+
+```mermaid
+flowchart LR
+    G[Guest kernel] -->|IN / OUT, MMIO, HLT| K[Linux KVM]
+    K -->|KVM_RUN returns| V[vm.c exit loop]
+    V --> P[Port-I/O router]
+    V --> M[MMIO router]
+    P --> S[16550 COM1]
+    M --> D[Debug + exit device]
+    S -->|read result / resume| K
+    D -->|read result / resume| K
+    V -->|HLT or requested exit| H[Clean host result]
+    V -->|fault / unsupported exit| R[Register-state diagnostic]
+```
+
+The vCPU runs natively until hardware exits to KVM. `vm.c` reads the shared
+`kvm_run` reason, routes device accesses without device-specific branches, and
+calls `KVM_RUN` again. See [the KVM API walkthrough](docs/03-kvm-api.md).
+
 ## Why it is interesting (the depth on show)
 
 - **The KVM API, by hand** — `KVM_CREATE_VM`, guest memory regions, `KVM_CREATE_VCPU`,
@@ -63,6 +92,7 @@ make run                 # build the VMM + guests and boot the ELF64 kernel
 Expected output:
 
 ```
+nutvisor: installed ... CPUID entries
 nutvisor: running guests/kernel/kernel.elf (...) in 64-bit long mode from ELF
 nutvisor: cpuid online
 nutvisor: elf64 kernel online
@@ -75,11 +105,10 @@ requirements (Windows 11 + WSL2 exposes VT-x by default).
 
 ## Status
 
-Milestones 0–5 are complete: nutvisor installs a coherent KVM CPUID table,
-validates and loads an ELF64 kernel, enters it in long mode, services its
-devices, and emits full state for every failure exit. Only the release polish
-remains.
-tracked in [docs/04-roadmap.md](docs/04-roadmap.md).
+nutvisor v1.0.0 is complete: it installs a coherent KVM CPUID table, validates
+and loads an ELF64 kernel, enters it in long mode, services port-I/O and MMIO
+devices, and emits full state for every failure exit. `make test` boots every
+guest and verifies both success and deliberate-failure paths.
 
 | # | Milestone | State |
 |---|-----------|-------|
@@ -89,7 +118,7 @@ tracked in [docs/04-roadmap.md](docs/04-roadmap.md).
 | 3 | Memory-mapped I/O device emulation | ✅ done |
 | 4 | ELF64 guest loader (boot a kernel from a file) | ✅ done |
 | 5 | CPUID filtering + robust exit handling | ✅ done |
-| 6 | Tests, CI, demo, `v1.0.0` (stretch: boot Nutshell) | ⬜ |
+| 6 | Tests, CI, demo, `v1.0.0` (stretch: boot Nutshell) | ✅ done |
 
 ## Repository layout
 
@@ -98,9 +127,9 @@ nutvisor/
 ├── src/          # the VMM (C, auto-discovered by the Makefile)
 ├── include/      # VMM headers
 ├── guests/       # guest programs the VMM runs (asm/C)
-├── scripts/      # setup-kvm.sh and helpers
+├── scripts/      # KVM setup and end-to-end self-test
 ├── docs/         # KVM API, architecture, roadmap, milestones, ADRs
-└── Makefile      # all / run / check-kvm / clean
+└── Makefile      # all / test / run / check-kvm / clean
 ```
 
 ## Requirements

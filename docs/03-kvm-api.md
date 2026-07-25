@@ -16,7 +16,7 @@ open("/dev/kvm")  ── the KVM subsystem (system-wide)
    vcpu_fd        ── one virtual CPU (owns register state)
 ```
 
-## Bring-up sequence (milestone 0)
+## Complete bring-up sequence
 
 1. **`open("/dev/kvm", O_RDWR)`** — the handle to KVM.
 2. **`ioctl(kvm, KVM_GET_API_VERSION)`** — must be `KVM_API_VERSION` (12); a

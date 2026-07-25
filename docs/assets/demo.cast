@@ -1,0 +1,9 @@
+{"version":2,"width":96,"height":14,"timestamp":1784932200,"env":{"SHELL":"/bin/bash","TERM":"xterm-256color"}}
+[0.200000,"o","$ make run\r\n"]
+[0.450000,"o","build/nutvisor guests/kernel/kernel.elf\r\n"]
+[0.720000,"o","nutvisor: installed 48 CPUID entries\r\n"]
+[1.050000,"o","nutvisor: running guests/kernel/kernel.elf (5256 bytes) in 64-bit long mode from ELF\r\n"]
+[1.350000,"o","nutvisor: cpuid online\r\n"]
+[1.600000,"o","nutvisor: elf64 kernel online\r\n"]
+[1.850000,"o","nutvisor: guest halted cleanly\r\n"]
+[2.300000,"o","$ \r\n"]

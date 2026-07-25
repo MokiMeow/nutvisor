@@ -6,7 +6,14 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.0.0] — 2026-07-25
+
 ### Added
+- Milestone 6: an end-to-end `make test` suite covering every guest, MMIO
+  status exits, malformed ELF rejection, and triple-fault diagnostics.
+- CI execution of the complete KVM suite with a generous cold-start timeout,
+  plus an asciinema recording, embedded terminal preview, and VM-exit flow
+  diagram.
 - Milestone 5: dynamically sized `KVM_GET_SUPPORTED_CPUID` /
   `KVM_SET_CPUID2` setup, exercised by the ELF guest before its boot marker.
 - Complete VM-exit reporting with automatic `rip`/segment/control-register
@@ -33,10 +40,9 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   vCPU; put the vCPU in real mode; run a 16-bit guest that prints to COM1 and
   halts, servicing `KVM_EXIT_IO` and `KVM_EXIT_HLT`.
 - A minimal COM1 serial device model on the host side.
-- Build system: `Makefile` (`all`/`run`/`check-kvm`/`clean`) with automatic KVM
+- Build system: `Makefile` (`all`/`test`/`run`/`check-kvm`/`clean`) with automatic KVM
   module loading, and a `setup-kvm.sh` helper.
-- GitHub Actions CI that builds the VMM and guest, and runs milestone 0 where
-  `/dev/kvm` is available (skipping the run, not the build, otherwise).
+- GitHub Actions build infrastructure with conditional `/dev/kvm` access.
 - Documentation set under `docs/` and the `AGENTS.md` operating manual.
 
 ## [0.1.0] — milestone 0

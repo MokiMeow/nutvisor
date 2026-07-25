@@ -49,6 +49,7 @@ This builds `build/nutvisor` and all guest images, ensures
 `/dev/kvm`, and runs the guest. Expected output:
 
 ```
+nutvisor: installed ... CPUID entries
 nutvisor: running guests/kernel/kernel.elf (...) in 64-bit long mode from ELF
 nutvisor: cpuid online
 nutvisor: elf64 kernel online
@@ -77,6 +78,7 @@ retain the original real-mode interface unless `--long` is supplied.
 | Command | Purpose |
 |---------|---------|
 | `make all` | Build the VMM and guest image(s). |
+| `make test` | Run every success/failure guest assertion through KVM. |
 | `make run` | Ensure `/dev/kvm`, build, and run the ELF64 kernel guest. |
 | `make run-mmio` | Run the milestone-3 MMIO guest. |
 | `make run-fault` | Deliberately triple-fault and print vCPU diagnostics (expected failure). |
@@ -95,5 +97,6 @@ retain the original real-mode interface unless `--long` is supplied.
   otherwise `sudo usermod -aG kvm $USER` and restart the shell.
 - **`KVM_EXIT_SHUTDOWN` / guest shutdown** — the guest triple-faulted. See
   [docs/09](09-testing-and-debugging.md).
-- **`unhandled exit_reason=N`** — the guest did something the current milestone
-  doesn't emulate yet; that's the next milestone's job.
+- **`unsupported KVM exit_reason=N`** — the guest requested a KVM exit the v1
+  device model does not implement; include the following register dump in a
+  bug report.

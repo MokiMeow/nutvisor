@@ -19,7 +19,8 @@ queries CPUID early, and completing the VM-exit switch so nothing is "unhandled.
       `default`.
 - [x] Improve diagnostics: on `SHUTDOWN`/`FAIL_ENTRY`, dump key registers
       (`rip`, `cs`, `cr0/cr3/cr4`, `efer`) to make triple faults debuggable.
-- [ ] (Optional) handle a guest reset cleanly rather than exiting.
+- **Deferred optional (post-v1):** restart guest state after a reset request
+  instead of reporting the exit and stopping.
 
 ## Files
 

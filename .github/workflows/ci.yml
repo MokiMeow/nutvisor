@@ -1,4 +1,4 @@
-name: build
+name: ci
 
 on:
   push:
@@ -15,8 +15,8 @@ jobs:
       - name: Install toolchain
         run: sudo apt-get update && sudo apt-get install -y gcc make nasm
 
-      - name: Build VMM and guest
-        run: make all
+      - name: Build VMM and guests
+        run: make clean && make all
 
       # GitHub's Ubuntu runners do ship /dev/kvm, but it is root-only by
       # default, so simply testing that the file exists is not enough — the
@@ -30,21 +30,15 @@ jobs:
           sudo udevadm trigger --name-match=kvm
           ls -l /dev/kvm || true
 
-      - name: Run the guest (skips only if KVM is genuinely unusable)
+      - name: Run the KVM self-test (skip only if KVM is unusable)
         run: |
           # -r and -w, not -e: the device existing says nothing about whether
           # this user can open it, which is exactly how this step failed before.
           if [ -r /dev/kvm ] && [ -w /dev/kvm ]; then
-            echo "/dev/kvm is usable — running the guest for real."
-            # 2>&1 matters: the guest's own output goes to stdout, but the
-            # VMM's status lines go to stderr. Capturing only stdout silently
-            # loses "halted cleanly" and fails a check that should pass.
-            out=$(make run 2>&1)
-            echo "$out"
-            echo "$out" | grep -q "guest is alive"
-            echo "$out" | grep -q "halted cleanly"
+            echo "/dev/kvm is usable — running the complete guest suite."
+            SELFTEST_TIMEOUT=120 make test
           else
             echo "SKIP: /dev/kvm is present but not usable by this runner."
-            echo "The VMM built successfully; the guest run is verified locally"
+            echo "The VMM built successfully; the guest suite is verified locally"
             echo "on a host with nested virtualization (see docs/01-getting-started.md)."
           fi

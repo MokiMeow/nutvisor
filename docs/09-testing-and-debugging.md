@@ -15,8 +15,8 @@ first clue:
 - **`KVM_EXIT_FAIL_ENTRY`** — the CPU refused to enter the guest; the
   `hardware_entry_failure_reason` is a VT-x code. Almost always an invalid
   `sregs` combination (e.g. long-mode bits set without valid paging).
-- **`unhandled exit_reason=N`** — the guest used a device/feature you haven't
-  emulated yet.
+- **`unsupported KVM exit_reason=N`** — the guest used a device or feature the
+  v1 model does not emulate; the following state dump shows where.
 
 ## Read the automatic register dump
 
@@ -45,11 +45,13 @@ few instructions. (A `-gdb` bridge is a stretch goal.)
 If a guest image runs under `qemu-system-x86_64 -kernel/-hda ...` but not under
 nutvisor, the bug is in *your* setup, not the guest. QEMU is the oracle.
 
-## Self-test (milestone 6)
+## Self-test
 
-Run a guest that writes a known string (or a known value to an "exit" MMIO
-device), capture stdout, and assert it. That's the automated equivalent of the
-milestone-0 manual check and what CI runs where `/dev/kvm` is available.
+`make test` runs all five functional guests through KVM and asserts their
+markers. It also checks malformed and truncated ELF rejection plus the
+deliberate triple-fault register dump. Each run has a 60-second local timeout
+(120 seconds in CI), leaving ample cold-start margin while still catching a
+hung guest. CI always builds and runs this suite whenever `/dev/kvm` is usable.
 
 ## Common failure table
 
