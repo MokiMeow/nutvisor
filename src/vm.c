@@ -13,6 +13,7 @@
 #include <sys/mman.h>
 #include <linux/kvm.h>
 
+#include "ioport.h"
 #include "serial.h"
 #include "vmm.h"
 
@@ -67,6 +68,7 @@ int vm_create(struct vm *vm, size_t mem_size) {
                    MAP_SHARED, vm->vcpu_fd, 0);
     if (vm->run == MAP_FAILED) { perror("mmap kvm_run"); return -1; }
 
+    serial_reset();
     return 0;
 }
 
@@ -124,12 +126,30 @@ int vm_run(struct vm *vm) {
         case KVM_EXIT_IO: {
             uint16_t port = vm->run->io.port;
             uint8_t *data = (uint8_t *)vm->run + vm->run->io.data_offset;
-            if (serial_handles_port(port)) {
-                for (uint32_t i = 0; i < vm->run->io.count; i++) {
-                    if (vm->run->io.direction == KVM_EXIT_IO_OUT)
-                        serial_out(port, data[i * vm->run->io.size]);
-                    else
-                        data[i * vm->run->io.size] = serial_in(port);
+            uint8_t size = vm->run->io.size;
+
+            if (size == 0 || size > sizeof(uint32_t)) {
+                fprintf(stderr, "invalid I/O access size=%u\n", size);
+                return -1;
+            }
+            for (uint32_t i = 0; i < vm->run->io.count; i++) {
+                uint8_t *item = data + (size_t)i * size;
+                uint32_t value = 0;
+
+                memcpy(&value, item, size);
+                if (vm->run->io.direction == KVM_EXIT_IO_OUT) {
+                    if (!ioport_write(port, size, value)) {
+                        fprintf(stderr, "unhandled I/O write port=0x%x size=%u\n",
+                                port, size);
+                        return -1;
+                    }
+                } else {
+                    if (!ioport_read(port, size, &value)) {
+                        fprintf(stderr, "unhandled I/O read port=0x%x size=%u\n",
+                                port, size);
+                        return -1;
+                    }
+                    memcpy(item, &value, size);
                 }
             }
             break;

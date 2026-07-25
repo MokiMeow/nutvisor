@@ -7,6 +7,11 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- Milestone 1: a reusable port-I/O dispatch table and a stateful 16550 COM1
+  model with DLAB/divisor, line-control, interrupt, FIFO, modem-control, line
+  status, and scratch-register behaviour.
+- A driver-style real-mode guest that configures COM1, polls transmitter
+  readiness, prints `nutvisor: 16550 driver online`, and halts.
 - Milestone 0: KVM bring-up — open `/dev/kvm`, create a VM, guest memory, and a
   vCPU; put the vCPU in real mode; run a 16-bit guest that prints to COM1 and
   halts, servicing `KVM_EXIT_IO` and `KVM_EXIT_HLT`.

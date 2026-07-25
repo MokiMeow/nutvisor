@@ -9,7 +9,7 @@ spec and a Definition of Done in [milestones/](milestones/).
 | # | Milestone | You'll build | You'll learn |
 |---|-----------|--------------|--------------|
 | 0 | **KVM hello** ✅ | VM/vCPU/memory, real-mode guest, serial + HLT | the KVM ioctl sequence, VM exits |
-| 1 | **Serial** | a port-I/O dispatch table + fuller 16550 model | port I/O exits, device modelling |
+| 1 | **Serial** ✅ | a port-I/O dispatch table + fuller 16550 model | port I/O exits, device modelling |
 | 2 | **Long mode** | GDT + page tables in guest memory, 64-bit sregs | real→long mode, guest paging |
 | 3 | **MMIO** | `KVM_EXIT_MMIO` handling + a mapped device | memory-mapped I/O |
 | 4 | **ELF loader** | parse ELF64, load segments, jump to entry | ELF, guest memory layout |

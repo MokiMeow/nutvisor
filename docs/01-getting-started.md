@@ -45,16 +45,16 @@ else to install.
 make run
 ```
 
-This builds `build/nutvisor` and the guest `build/hello16.bin`, ensures
+This builds `build/nutvisor` and all guest images, ensures
 `/dev/kvm`, and runs the guest. Expected output:
 
 ```
-nutvisor: running build/hello16.bin (68 bytes) as a real-mode guest
-nutvisor: the guest is alive inside your hypervisor
+nutvisor: running build/serial-driver.bin (...) as a real-mode guest
+nutvisor: 16550 driver online
 nutvisor: guest halted cleanly
 ```
 
-The middle line is printed *by the guest*, from inside the VM.
+The middle line is printed *by a guest UART driver*, from inside the VM.
 
 ## 4. Running a different guest
 
@@ -72,7 +72,8 @@ Later milestones add long-mode and ELF guests you can pass the same way.
 | Command | Purpose |
 |---------|---------|
 | `make all` | Build the VMM and guest image(s). |
-| `make run` | Ensure `/dev/kvm`, build, and run the guest. |
+| `make run` | Ensure `/dev/kvm`, build, and run the UART-driver guest. |
+| `make run-hello16` | Run the original milestone-0 guest. |
 | `make check-kvm` | Just ensure `/dev/kvm` is available. |
 | `make clean` | Delete `build/`. |
 
