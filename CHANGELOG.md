@@ -7,6 +7,10 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- Milestone 3: generic `KVM_EXIT_MMIO` dispatch plus a control device at
+  `0x10000000` with a debug console and status-code exit register.
+- A 64-bit MMIO demo guest that prints `nutvisor: mmio console online` and
+  requests a clean device exit.
 - Milestone 2: direct 64-bit long-mode vCPU entry with an in-guest GDT, a
   four-level identity map of the low GiB using 2 MiB pages, and a valid stack.
 - A 64-bit flat-binary guest that prints `nutvisor: long mode online` through

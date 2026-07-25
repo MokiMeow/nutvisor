@@ -36,7 +36,7 @@ only requires registering its range and callbacks; `vm.c` remains unchanged.
 ## Memory-mapped devices (MMIO, milestone 3)
 
 Some devices live at a physical *address* instead of a port. If the guest reads
-or writes physical memory that isn't backed by a memory slot, KVM returns
+or writes mapped physical memory that isn't backed by a memory slot, KVM returns
 `KVM_EXIT_MMIO` with `phys_addr`, `len`, `is_write`, and a `data[8]` buffer:
 
 ```c
@@ -47,10 +47,11 @@ case KVM_EXIT_MMIO:
     }
 ```
 
-You choose an address range that is *deliberately not* mapped as RAM, so
-accesses trap. A good first MMIO device is a debug console (write a byte → host
-prints it) or an "exit" device (write a code → stop the VM), which is handy for
-self-tests.
+nutvisor reserves `0x10000000`–`0x1000000f`, inside the guest's identity map but
+outside its 64 MiB RAM slot. Byte writes at the base form a debug console.
+Writes of a 1-, 2-, or 4-byte status at base+8 stop the VM; status zero is a
+clean device exit and a nonzero status fails the run. `src/mmio.c` owns the
+address-range dispatch table.
 
 ## Principles
 

@@ -14,6 +14,7 @@
 #include <linux/kvm.h>
 
 #include "ioport.h"
+#include "mmio.h"
 #include "serial.h"
 #include "vmm.h"
 
@@ -286,11 +287,30 @@ int vm_run(struct vm *vm) {
             break;
         }
 
-        case KVM_EXIT_MMIO:
-            /* Milestone 3 wires up memory-mapped devices here. */
-            fprintf(stderr, "unhandled MMIO at 0x%llx\n",
-                    (unsigned long long)vm->run->mmio.phys_addr);
+        case KVM_EXIT_MMIO: {
+            uint32_t exit_status = 0;
+            enum mmio_result result = mmio_access(
+                vm->run->mmio.phys_addr,
+                vm->run->mmio.is_write != 0,
+                vm->run->mmio.data,
+                vm->run->mmio.len,
+                &exit_status);
+
+            if (result == MMIO_UNHANDLED) {
+                fprintf(stderr,
+                        "unhandled MMIO %s address=0x%llx len=%u\n",
+                        vm->run->mmio.is_write ? "write" : "read",
+                        (unsigned long long)vm->run->mmio.phys_addr,
+                        vm->run->mmio.len);
+                return -1;
+            }
+            if (result == MMIO_STOP) {
+                fprintf(stderr, "nutvisor: guest requested exit status=%u\n",
+                        exit_status);
+                return exit_status == 0 ? VM_RUN_EXITED : VM_RUN_ERROR;
+            }
             break;
+        }
 
         case KVM_EXIT_SHUTDOWN:
             fprintf(stderr, "guest shutdown (triple fault?)\n");

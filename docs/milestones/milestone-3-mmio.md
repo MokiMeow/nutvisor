@@ -1,4 +1,4 @@
-# Milestone 3 — MMIO device
+# Milestone 3 — MMIO device ✅ (done)
 
 **Goal:** handle `KVM_EXIT_MMIO` and emulate a memory-mapped device, so guests
 can talk to "hardware" by address as well as by port.
@@ -10,15 +10,15 @@ and a device that lives at an address instead of a port.
 
 ## Tasks
 
-- [ ] Choose a guest-physical range that is deliberately **not** backed by a
+- [x] Choose a guest-physical range that is deliberately **not** backed by a
       memory slot (so accesses trap), e.g. `0xE000_0000`.
-- [ ] Handle `KVM_EXIT_MMIO` in `vm.c`: dispatch on `run->mmio.phys_addr`,
+- [x] Handle `KVM_EXIT_MMIO` in `vm.c`: dispatch on `run->mmio.phys_addr`,
       `is_write`, `len`, and the `data` buffer, routing to an owning device.
-- [ ] Implement `src/mmio.c` with at least one device:
+- [x] Implement `src/mmio.c` with at least one device:
   - a **debug console**: a write of a byte to the base address prints it; and/or
   - an **exit device**: a write of a status code stops the VM (useful for
     self-tests in milestone 6).
-- [ ] Add a guest that writes to the MMIO device and confirm the host sees it.
+- [x] Add a guest that writes to the MMIO device and confirm the host sees it.
 
 ## Files
 
@@ -27,9 +27,9 @@ and a device that lives at an address instead of a port.
 
 ## Definition of Done
 
-- [ ] A guest writing to the MMIO console prints on the host; a write to the
+- [x] A guest writing to the MMIO console prints on the host; a write to the
       exit device stops the VM with the expected status.
-- [ ] `make all` clean; port-I/O guests still run.
+- [x] `make all` clean; port-I/O guests still run.
 
 ## References
 
