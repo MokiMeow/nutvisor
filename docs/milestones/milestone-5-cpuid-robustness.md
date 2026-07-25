@@ -1,4 +1,4 @@
-# Milestone 5 — CPUID + robustness
+# Milestone 5 — CPUID + robustness ✅ (done)
 
 **Goal:** make the VMM robust enough to host a real kernel: a sane CPUID, and
 clean handling of every VM-exit reason.
@@ -10,14 +10,14 @@ queries CPUID early, and completing the VM-exit switch so nothing is "unhandled.
 
 ## Tasks
 
-- [ ] Set the guest's CPUID: fetch `KVM_GET_SUPPORTED_CPUID` from the KVM fd and
+- [x] Set the guest's CPUID: fetch `KVM_GET_SUPPORTED_CPUID` from the KVM fd and
       apply it with `KVM_SET_CPUID2` on the vCPU, so the guest sees a coherent
       feature set (kernels branch on CPUID during early boot).
-- [ ] Audit the exit switch in `vm.c`: handle or explicitly, deliberately report
+- [x] Audit the exit switch in `vm.c`: handle or explicitly, deliberately report
       every reason a kernel guest can produce (`IO`, `MMIO`, `HLT`, `SHUTDOWN`,
       `FAIL_ENTRY`, `INTERNAL_ERROR`, `DEBUG` if single-stepping). No silent
       `default`.
-- [ ] Improve diagnostics: on `SHUTDOWN`/`FAIL_ENTRY`, dump key registers
+- [x] Improve diagnostics: on `SHUTDOWN`/`FAIL_ENTRY`, dump key registers
       (`rip`, `cs`, `cr0/cr3/cr4`, `efer`) to make triple faults debuggable.
 - [ ] (Optional) handle a guest reset cleanly rather than exiting.
 
@@ -28,11 +28,11 @@ queries CPUID early, and completing the VM-exit switch so nothing is "unhandled.
 
 ## Definition of Done
 
-- [ ] The guest kernel from milestone 4 boots with CPUID set, exercising more of
+- [x] The guest kernel from milestone 4 boots with CPUID set, exercising more of
       its early-boot path than before.
-- [ ] Every exit reason is handled or reported with useful detail; a triple
+- [x] Every exit reason is handled or reported with useful detail; a triple
       fault prints a register dump, not just "guest shutdown."
-- [ ] `make all` clean; earlier guests still run.
+- [x] `make all` clean; earlier guests still run.
 
 ## References
 

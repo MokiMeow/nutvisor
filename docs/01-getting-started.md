@@ -50,11 +50,12 @@ This builds `build/nutvisor` and all guest images, ensures
 
 ```
 nutvisor: running guests/kernel/kernel.elf (...) in 64-bit long mode from ELF
+nutvisor: cpuid online
 nutvisor: elf64 kernel online
 nutvisor: guest halted cleanly
 ```
 
-The middle line is printed *by an ELF64 guest kernel* after verifying that its
+The guest first exercises its KVM-provided CPUID table, then verifies that its
 `.bss` was zero-filled by the VMM.
 
 ## 4. Running a different guest
@@ -78,6 +79,7 @@ retain the original real-mode interface unless `--long` is supplied.
 | `make all` | Build the VMM and guest image(s). |
 | `make run` | Ensure `/dev/kvm`, build, and run the ELF64 kernel guest. |
 | `make run-mmio` | Run the milestone-3 MMIO guest. |
+| `make run-fault` | Deliberately triple-fault and print vCPU diagnostics (expected failure). |
 | `make run-long` | Run the milestone-2 long-mode serial guest. |
 | `make run-serial` | Run the milestone-1 UART-driver guest. |
 | `make run-hello16` | Run the original milestone-0 guest. |

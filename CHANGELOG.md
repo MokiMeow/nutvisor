@@ -7,6 +7,10 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- Milestone 5: dynamically sized `KVM_GET_SUPPORTED_CPUID` /
+  `KVM_SET_CPUID2` setup, exercised by the ELF guest before its boot marker.
+- Complete VM-exit reporting with automatic `rip`/segment/control-register
+  dumps, plus a deliberate `ud2` guest for triple-fault diagnostics.
 - Milestone 4: a two-pass ELF64 loader that validates headers, segment/file/RAM
   bounds, executable entry placement, and `.bss` sizing before modifying guest
   RAM, then loads every `PT_LOAD` segment and zero-fills it.

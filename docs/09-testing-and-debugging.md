@@ -5,9 +5,9 @@ are the techniques that make nutvisor debuggable.
 
 ## Read the exit reason
 
-The first question is always "why did `KVM_RUN` return?". nutvisor already
-prints the unusual ones (`SHUTDOWN`, `FAIL_ENTRY`, `INTERNAL_ERROR`,
-`unhandled exit_reason`). When something goes wrong, that stderr line is your
+The first question is always "why did `KVM_RUN` return?". nutvisor reports
+`SHUTDOWN`, `FAIL_ENTRY`, `INTERNAL_ERROR`, `DEBUG`, `EXCEPTION`, and every
+unsupported numeric exit. When something goes wrong, that stderr line is your
 first clue:
 
 - **`KVM_EXIT_SHUTDOWN`** — the guest triple-faulted. Its initial CPU state or
@@ -18,12 +18,13 @@ first clue:
 - **`unhandled exit_reason=N`** — the guest used a device/feature you haven't
   emulated yet.
 
-## Dump register state before `KVM_RUN`
+## Read the automatic register dump
 
-The highest-value debugging tool: `KVM_GET_REGS`/`KVM_GET_SREGS` right before
-running, printed field by field, checked against the Intel manual. A single
-wrong bit in `cr0`, `efer`, or a segment descriptor is the usual cause of a
-mode-transition failure.
+On a shutdown, failed entry, internal error, debug/exception exit, or
+unsupported exit, nutvisor calls `KVM_GET_REGS`/`KVM_GET_SREGS` and prints
+`rip`, `rsp`, `rflags`, `cs`, `cr0`, `cr3`, `cr4`, and `efer`. The
+`build/fault64.bin` diagnostic guest deliberately executes `ud2`; `make
+run-fault` demonstrates this path and is expected to exit nonzero.
 
 ## Inspect guest memory directly
 

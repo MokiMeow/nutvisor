@@ -47,6 +47,7 @@ MMIO address, etc.).
 ```
 main: read guest image
       vm_create()           open /dev/kvm, KVM_CREATE_VM, map memory + vcpu
+                            install KVM-supported CPUID on the vCPU
       vm_load_guest()       copy the image into guest memory
       set CPU mode          real mode (M0) / long mode (M2) / from ELF (M4)
       vm_run():
@@ -56,7 +57,7 @@ main: read guest image
                   IO       -> serial / device handler
                   MMIO     -> mmio handler        (M3)
                   HLT      -> return (done)
-                  SHUTDOWN / FAIL_ENTRY -> report and stop
+                  SHUTDOWN / FAIL_ENTRY -> dump registers and stop
 ```
 
 The guest runs at native speed until it does something that must trap to the
@@ -85,6 +86,7 @@ Each device declares which addresses it owns; `vm.c` routes exits to the owner.
 | `guests/hello16.asm` | real-mode demo guest | M0 |
 | `src/mmio.c` | memory-mapped device(s) | M3 |
 | `src/loader.c` | ELF64 loader | M4 |
+| `src/cpuid.c` | dynamic KVM-supported CPUID setup | M5 |
 | `guests/*` | long-mode + kernel guests | M2, M4 |
 
 See the [roadmap](04-roadmap.md) for the order and the

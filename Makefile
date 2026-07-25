@@ -24,13 +24,15 @@ LONG_GUEST_SRC := guests/hello64.asm
 LONG_GUEST_BIN := $(BUILD)/hello64.bin
 MMIO_GUEST_SRC := guests/mmio-demo.asm
 MMIO_GUEST_BIN := $(BUILD)/mmio-demo.bin
+FAULT_GUEST_SRC := guests/fault64.asm
+FAULT_GUEST_BIN := $(BUILD)/fault64.bin
 KERNEL_SRC := guests/kernel/entry.asm
 KERNEL_OBJ := $(BUILD)/kernel-entry.o
 KERNEL_ELF := guests/kernel/kernel.elf
 
-.PHONY: all run run-mmio run-long run-serial run-hello16 check-kvm clean
+.PHONY: all run run-fault run-mmio run-long run-serial run-hello16 check-kvm clean
 
-all: $(VMM) $(GUEST_BIN) $(SERIAL_GUEST_BIN) $(LONG_GUEST_BIN) $(MMIO_GUEST_BIN) $(KERNEL_ELF)
+all: $(VMM) $(GUEST_BIN) $(SERIAL_GUEST_BIN) $(LONG_GUEST_BIN) $(MMIO_GUEST_BIN) $(FAULT_GUEST_BIN) $(KERNEL_ELF)
 
 $(BUILD):
 	mkdir -p $(BUILD)
@@ -51,6 +53,9 @@ $(LONG_GUEST_BIN): $(LONG_GUEST_SRC) | $(BUILD)
 	$(NASM) -f bin $< -o $@
 
 $(MMIO_GUEST_BIN): $(MMIO_GUEST_SRC) | $(BUILD)
+	$(NASM) -f bin $< -o $@
+
+$(FAULT_GUEST_BIN): $(FAULT_GUEST_SRC) | $(BUILD)
 	$(NASM) -f bin $< -o $@
 
 $(KERNEL_OBJ): $(KERNEL_SRC) | $(BUILD)
@@ -82,6 +87,9 @@ check-kvm:
 
 run: check-kvm $(VMM) $(KERNEL_ELF)
 	$(VMM) $(KERNEL_ELF)
+
+run-fault: check-kvm $(VMM) $(FAULT_GUEST_BIN)
+	$(VMM) --long $(FAULT_GUEST_BIN)
 
 run-mmio: check-kvm $(VMM) $(MMIO_GUEST_BIN)
 	$(VMM) --long $(MMIO_GUEST_BIN)
