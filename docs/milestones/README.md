@@ -9,7 +9,7 @@ one per pass; keep the build green and the guest running.
 | 0 | [KVM hello](milestone-0-kvm-hello.md) | ✅ done |
 | 1 | [Serial device model](milestone-1-serial.md) | ✅ done |
 | 2 | [Long-mode guest](milestone-2-longmode.md) | ✅ done |
-| 3 | [MMIO device](milestone-3-mmio.md) | ⬜ |
+| 3 | [MMIO device](milestone-3-mmio.md) | ✅ done |
 | 4 | [ELF64 guest loader](milestone-4-elf-loader.md) | ⬜ |
 | 5 | [CPUID + robustness](milestone-5-cpuid-robustness.md) | ⬜ |
 | 6 | [Polish](milestone-6-polish.md) | ⬜ |

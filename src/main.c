@@ -95,11 +95,13 @@ int main(int argc, char **argv) {
         fprintf(stderr, "nutvisor: running %s (%ld bytes) in %s mode\n",
                 path, len, mode == GUEST_MODE_LONG ? "64-bit long" : "16-bit real");
         rc = vm_run(&vm);
-        if (rc == 0)
+        if (rc == VM_RUN_HALTED)
             fprintf(stderr, "nutvisor: guest halted cleanly\n");
+        else if (rc == VM_RUN_EXITED)
+            fprintf(stderr, "nutvisor: guest exited cleanly\n");
     }
 
     vm_destroy(&vm);
     free(code);
-    return rc == 0 ? 0 : 1;
+    return rc >= 0 ? 0 : 1;
 }

@@ -21,10 +21,12 @@ SERIAL_GUEST_SRC := guests/serial-driver.asm
 SERIAL_GUEST_BIN := $(BUILD)/serial-driver.bin
 LONG_GUEST_SRC := guests/hello64.asm
 LONG_GUEST_BIN := $(BUILD)/hello64.bin
+MMIO_GUEST_SRC := guests/mmio-demo.asm
+MMIO_GUEST_BIN := $(BUILD)/mmio-demo.bin
 
-.PHONY: all run run-serial run-hello16 check-kvm clean
+.PHONY: all run run-long run-serial run-hello16 check-kvm clean
 
-all: $(VMM) $(GUEST_BIN) $(SERIAL_GUEST_BIN) $(LONG_GUEST_BIN)
+all: $(VMM) $(GUEST_BIN) $(SERIAL_GUEST_BIN) $(LONG_GUEST_BIN) $(MMIO_GUEST_BIN)
 
 $(BUILD):
 	mkdir -p $(BUILD)
@@ -42,6 +44,9 @@ $(SERIAL_GUEST_BIN): $(SERIAL_GUEST_SRC) | $(BUILD)
 	$(NASM) -f bin $< -o $@
 
 $(LONG_GUEST_BIN): $(LONG_GUEST_SRC) | $(BUILD)
+	$(NASM) -f bin $< -o $@
+
+$(MMIO_GUEST_BIN): $(MMIO_GUEST_SRC) | $(BUILD)
 	$(NASM) -f bin $< -o $@
 
 # Load the KVM module if the device node is missing (needed after a WSL
@@ -64,7 +69,10 @@ check-kvm:
 	  ls -l /dev/kvm; \
 	  exit 1; }
 
-run: check-kvm $(VMM) $(LONG_GUEST_BIN)
+run: check-kvm $(VMM) $(MMIO_GUEST_BIN)
+	$(VMM) --long $(MMIO_GUEST_BIN)
+
+run-long: check-kvm $(VMM) $(LONG_GUEST_BIN)
 	$(VMM) --long $(LONG_GUEST_BIN)
 
 run-serial: check-kvm $(VMM) $(SERIAL_GUEST_BIN)

@@ -15,6 +15,12 @@ struct vm {
     size_t mem_size;
 };
 
+enum vm_run_result {
+    VM_RUN_ERROR = -1,
+    VM_RUN_HALTED = 0,
+    VM_RUN_EXITED = 1,
+};
+
 /* Create a VM with `mem_size` bytes of guest RAM at guest-physical 0, one
  * vCPU, and a mapped kvm_run. Returns 0 on success, -1 on error (errno set). */
 int vm_create(struct vm *vm, size_t mem_size);
@@ -29,8 +35,7 @@ int vm_set_real_mode(struct vm *vm, uint64_t entry);
  * vCPU directly into 64-bit long mode with rip = entry. */
 int vm_set_long_mode(struct vm *vm, uint64_t entry);
 
-/* Run the vCPU until the guest halts or the VM shuts down. Returns 0 on a
- * clean HLT, -1 on an unexpected or error exit. */
+/* Run until the guest halts, requests an MMIO-device exit, or fails. */
 int vm_run(struct vm *vm);
 
 void vm_destroy(struct vm *vm);

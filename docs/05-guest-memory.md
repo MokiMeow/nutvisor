@@ -46,6 +46,9 @@ range. v1 uses one slot for all of low RAM. You'd add slots for:
   corrupts adjacent guest memory.
 - **Alignment.** Page tables and some structures the guest expects must be
   page-aligned in guest-physical space; choose load addresses accordingly.
+- **MMIO holes.** The control device at `0x10000000` is within the low-GiB
+  identity map but outside the 64 MiB RAM slot. Accesses therefore reach KVM
+  translation successfully and exit to the VMM as `KVM_EXIT_MMIO`.
 - **Identity vs. higher-half.** The implemented PML4 at `0x2000`, PDPT at
   `0x3000`, and page directory at `0x4000` identity-map the first GiB with
   2 MiB pages. The GDT lives at `0x5000`.

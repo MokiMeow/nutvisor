@@ -49,12 +49,14 @@ This builds `build/nutvisor` and all guest images, ensures
 `/dev/kvm`, and runs the guest. Expected output:
 
 ```
-nutvisor: running build/hello64.bin (...) in 64-bit long mode
-nutvisor: long mode online
-nutvisor: guest halted cleanly
+nutvisor: running build/mmio-demo.bin (...) in 64-bit long mode
+nutvisor: mmio console online
+nutvisor: guest requested exit status=0
+nutvisor: guest exited cleanly
 ```
 
-The middle line is printed *by a 64-bit guest UART driver*, from inside the VM.
+The MMIO marker is printed *by the 64-bit guest* through an emulated memory-
+mapped console; the same guest then stops through the MMIO exit register.
 
 ## 4. Running a different guest
 
@@ -73,7 +75,8 @@ An explicit image without a mode flag retains the original real-mode interface.
 | Command | Purpose |
 |---------|---------|
 | `make all` | Build the VMM and guest image(s). |
-| `make run` | Ensure `/dev/kvm`, build, and run the 64-bit guest. |
+| `make run` | Ensure `/dev/kvm`, build, and run the MMIO guest. |
+| `make run-long` | Run the milestone-2 long-mode serial guest. |
 | `make run-serial` | Run the milestone-1 UART-driver guest. |
 | `make run-hello16` | Run the original milestone-0 guest. |
 | `make check-kvm` | Just ensure `/dev/kvm` is available. |
