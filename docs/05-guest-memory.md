@@ -36,7 +36,7 @@ range. v1 uses one slot for all of low RAM. You'd add slots for:
 | Milestone | Guest layout |
 |-----------|--------------|
 | M0 | 1 MiB flat; guest blob at `0x1000`, real mode |
-| M2 | + a GDT and page tables placed in guest memory for long mode |
+| M2 | 64 MiB RAM; flat guest at `0x100000`; paging at `0x2000`–`0x4fff`, GDT at `0x5000`, stack at `0x800000` |
 | M4 | ELF `PT_LOAD` segments copied to their `p_paddr`; entry at `e_entry` |
 
 ## Gotchas
@@ -46,6 +46,6 @@ range. v1 uses one slot for all of low RAM. You'd add slots for:
   corrupts adjacent guest memory.
 - **Alignment.** Page tables and some structures the guest expects must be
   page-aligned in guest-physical space; choose load addresses accordingly.
-- **Identity vs. higher-half.** For long mode you decide the guest's virtual→
-  physical mapping by writing its page tables (M2); the simplest is an identity
-  map of low memory.
+- **Identity vs. higher-half.** The implemented PML4 at `0x2000`, PDPT at
+  `0x3000`, and page directory at `0x4000` identity-map the first GiB with
+  2 MiB pages. The GDT lives at `0x5000`.
