@@ -41,13 +41,14 @@ valid page tables in `cr3`. Two ways to get there:
    real kernel's boot code does), then jumps to 64-bit. (Less host code; the
    guest carries the transition — like Nutshell's `boot.asm`.)
 
-Milestone 2 recommends **option 1** first (it teaches the sregs/paging setup
-that's the point of this project), with option 2 available for kernel guests
-that already bootstrap themselves.
+nutvisor implements **option 1**. `vm_set_long_mode` builds the paging hierarchy
+and GDT in guest memory, then installs the complete register state through KVM.
 
-The identity-mapped page table for the low region is small: one PML4 entry → one
-PDPT entry → one PD full of 2 MiB pages covers the first gigabyte. Place these
-page-aligned in guest memory and set `cr3` to their guest-physical address.
+The exact state is reproducible: `cr3=0x2000`; `cr4.PAE=1`; `cr0.PE=1` and
+`cr0.PG=1`; `efer.LME=1` and `efer.LMA=1`; `cs.L=1`, `cs.DB=0`, selector
+`0x08`; flat data segments use selector `0x10`. A PML4, PDPT, and 512-entry
+large-page directory identity-map the first GiB. The guest starts with
+`rsp=0x800000`.
 
 ## Protected mode (32-bit)
 

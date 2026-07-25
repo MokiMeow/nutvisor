@@ -1,4 +1,4 @@
-# Milestone 2 — Long-mode guest
+# Milestone 2 — Long-mode guest ✅ (done)
 
 **Goal:** bring the vCPU up into 64-bit long mode and run a 64-bit guest that
 prints via serial. This is the gateway to booting a real kernel.
@@ -11,17 +11,17 @@ code descriptor, valid `cr3` page tables), and building a GDT + page tables
 
 ## Tasks
 
-- [ ] In guest memory, build an identity-mapped page table for the low region:
+- [x] In guest memory, build an identity-mapped page table for the low region:
       one PML4 → one PDPT → one PD of 2 MiB pages (covers 1 GiB). Place them
       page-aligned at known guest-physical addresses.
-- [ ] Build a minimal GDT in guest memory (null, 64-bit code, data) — or set the
+- [x] Build a minimal GDT in guest memory (null, 64-bit code, data) — or set the
       `cs`/`ds` descriptors directly in `sregs`.
-- [ ] Add `vm_set_long_mode(entry)`: set `sregs` — `cr3` = page-table base,
+- [x] Add `vm_set_long_mode(entry)`: set `sregs` — `cr3` = page-table base,
       `cr4.PAE`, `cr0.PG|PE`, `efer.LME|LMA`, a 64-bit `cs` (L=1), flat data
       segments — then `KVM_SET_SREGS`; set `rip = entry`, a valid `rsp`.
-- [ ] Add a 64-bit guest (`guests/hello64.asm`, `nasm -f bin`, `bits 64`) that
+- [x] Add a 64-bit guest (`guests/hello64.asm`, `nasm -f bin`, `bits 64`) that
       writes a string to `0x3F8` and halts.
-- [ ] Load the guest at its expected physical address and run it.
+- [x] Load the guest at its expected physical address and run it.
 
 ## Files
 
@@ -30,11 +30,11 @@ new `src/paging.c`), `guests/hello64.asm`, `src/main.c` (mode selection).
 
 ## Definition of Done
 
-- [ ] `make run` with the 64-bit guest prints its message and halts cleanly —
+- [x] `make run` with the 64-bit guest prints its message and halts cleanly —
       no `KVM_EXIT_SHUTDOWN`/`FAIL_ENTRY`.
-- [ ] A register dump (or a comment) documents the exact `cr0/cr4/efer/cs` bits
+- [x] A register dump (or a comment) documents the exact `cr0/cr4/efer/cs` bits
       set, so the transition is reproducible.
-- [ ] `make all` clean; earlier guests still run.
+- [x] `make all` clean; earlier guests still run.
 
 ## Notes
 

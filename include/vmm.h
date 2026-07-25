@@ -25,6 +25,10 @@ int vm_load_guest(struct vm *vm, uint64_t guest_addr, const void *code, size_t l
 /* Put the vCPU in 16-bit real mode (flat, segment bases 0) with rip = entry. */
 int vm_set_real_mode(struct vm *vm, uint64_t entry);
 
+/* Build an identity-mapped low-memory paging hierarchy and GDT, then put the
+ * vCPU directly into 64-bit long mode with rip = entry. */
+int vm_set_long_mode(struct vm *vm, uint64_t entry);
+
 /* Run the vCPU until the guest halts or the VM shuts down. Returns 0 on a
  * clean HLT, -1 on an unexpected or error exit. */
 int vm_run(struct vm *vm);

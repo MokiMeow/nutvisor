@@ -17,6 +17,28 @@
 #include "serial.h"
 #include "vmm.h"
 
+#define PAGE_SIZE       0x1000ULL
+#define PAGE_TABLE_PML4 0x2000ULL
+#define PAGE_TABLE_PDPT 0x3000ULL
+#define PAGE_TABLE_PD   0x4000ULL
+#define GDT_ADDRESS     0x5000ULL
+#define LONG_MODE_STACK 0x800000ULL
+
+#define PAGE_PRESENT    (1ULL << 0)
+#define PAGE_WRITABLE   (1ULL << 1)
+#define PAGE_LARGE      (1ULL << 7)
+
+#define CR0_PE          (1ULL << 0)
+#define CR0_PG          (1ULL << 31)
+#define CR4_PAE         (1ULL << 5)
+#define EFER_LME        (1ULL << 8)
+#define EFER_LMA        (1ULL << 10)
+
+#define GDT_CODE_SELECTOR 0x08U
+#define GDT_DATA_SELECTOR 0x10U
+#define GDT_CODE_ENTRY    0x00AF9B000000FFFFULL
+#define GDT_DATA_ENTRY    0x00CF93000000FFFFULL
+
 int vm_create(struct vm *vm, size_t mem_size) {
     memset(vm, 0, sizeof(*vm));
     vm->kvm_fd = -1;
@@ -74,7 +96,7 @@ int vm_create(struct vm *vm, size_t mem_size) {
 
 int vm_load_guest(struct vm *vm, uint64_t guest_addr, const void *code,
                   size_t len) {
-    if (guest_addr + len > vm->mem_size) {
+    if (guest_addr > vm->mem_size || len > vm->mem_size - guest_addr) {
         fprintf(stderr, "guest image does not fit in %zu bytes of RAM\n",
                 vm->mem_size);
         return -1;
@@ -105,6 +127,115 @@ int vm_set_real_mode(struct vm *vm, uint64_t entry) {
         .rsp = 0x0,
         .rflags = 0x2, /* bit 1 is always set; DF=0 so LODSB counts up */
     };
+    if (ioctl(vm->vcpu_fd, KVM_SET_REGS, &regs) < 0) {
+        perror("KVM_SET_REGS");
+        return -1;
+    }
+    return 0;
+}
+
+static struct kvm_segment code_segment(void) {
+    return (struct kvm_segment) {
+        .base = 0,
+        .limit = UINT32_MAX,
+        .selector = GDT_CODE_SELECTOR,
+        .type = 11,
+        .present = 1,
+        .dpl = 0,
+        .db = 0,
+        .s = 1,
+        .l = 1,
+        .g = 1,
+    };
+}
+
+static struct kvm_segment data_segment(void) {
+    return (struct kvm_segment) {
+        .base = 0,
+        .limit = UINT32_MAX,
+        .selector = GDT_DATA_SELECTOR,
+        .type = 3,
+        .present = 1,
+        .dpl = 0,
+        .db = 1,
+        .s = 1,
+        .l = 0,
+        .g = 1,
+    };
+}
+
+static int build_long_mode_tables(struct vm *vm) {
+    if (vm->mem_size < LONG_MODE_STACK + PAGE_SIZE) {
+        fprintf(stderr, "long mode requires at least 0x%llx bytes of RAM\n",
+                (unsigned long long)(LONG_MODE_STACK + PAGE_SIZE));
+        return -1;
+    }
+
+    uint64_t *pml4 = (uint64_t *)(vm->mem + PAGE_TABLE_PML4);
+    uint64_t *pdpt = (uint64_t *)(vm->mem + PAGE_TABLE_PDPT);
+    uint64_t *pd = (uint64_t *)(vm->mem + PAGE_TABLE_PD);
+    uint64_t *gdt = (uint64_t *)(vm->mem + GDT_ADDRESS);
+
+    memset(pml4, 0, PAGE_SIZE);
+    memset(pdpt, 0, PAGE_SIZE);
+    memset(pd, 0, PAGE_SIZE);
+    memset(gdt, 0, PAGE_SIZE);
+
+    pml4[0] = PAGE_TABLE_PDPT | PAGE_PRESENT | PAGE_WRITABLE;
+    pdpt[0] = PAGE_TABLE_PD | PAGE_PRESENT | PAGE_WRITABLE;
+    for (uint64_t i = 0; i < 512; i++)
+        pd[i] = (i << 21) | PAGE_PRESENT | PAGE_WRITABLE | PAGE_LARGE;
+
+    gdt[0] = 0;
+    gdt[1] = GDT_CODE_ENTRY;
+    gdt[2] = GDT_DATA_ENTRY;
+    return 0;
+}
+
+int vm_set_long_mode(struct vm *vm, uint64_t entry) {
+    struct kvm_sregs sregs;
+    struct kvm_regs regs = {
+        .rip = entry,
+        .rsp = LONG_MODE_STACK,
+        .rbp = LONG_MODE_STACK,
+        .rflags = 0x2,
+    };
+
+    if (entry >= vm->mem_size) {
+        fprintf(stderr, "long-mode entry 0x%llx is outside guest RAM\n",
+                (unsigned long long)entry);
+        return -1;
+    }
+    if (build_long_mode_tables(vm) < 0)
+        return -1;
+    if (ioctl(vm->vcpu_fd, KVM_GET_SREGS, &sregs) < 0) {
+        perror("KVM_GET_SREGS");
+        return -1;
+    }
+
+    /*
+     * Reproducible long-mode entry state:
+     *   cr0.PE=1, cr0.PG=1, cr4.PAE=1,
+     *   efer.LME=1, efer.LMA=1, cs.L=1, cs.DB=0.
+     * cr3 points at a PML4 -> PDPT -> 2 MiB-page PD identity mapping 1 GiB.
+     */
+    sregs.cr3 = PAGE_TABLE_PML4;
+    sregs.cr4 |= CR4_PAE;
+    sregs.cr0 |= CR0_PE | CR0_PG;
+    sregs.efer |= EFER_LME | EFER_LMA;
+    sregs.gdt.base = GDT_ADDRESS;
+    sregs.gdt.limit = (3U * sizeof(uint64_t)) - 1U;
+    sregs.cs = code_segment();
+    sregs.ds = data_segment();
+    sregs.es = data_segment();
+    sregs.fs = data_segment();
+    sregs.gs = data_segment();
+    sregs.ss = data_segment();
+
+    if (ioctl(vm->vcpu_fd, KVM_SET_SREGS, &sregs) < 0) {
+        perror("KVM_SET_SREGS");
+        return -1;
+    }
     if (ioctl(vm->vcpu_fd, KVM_SET_REGS, &regs) < 0) {
         perror("KVM_SET_REGS");
         return -1;

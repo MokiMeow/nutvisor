@@ -49,12 +49,12 @@ This builds `build/nutvisor` and all guest images, ensures
 `/dev/kvm`, and runs the guest. Expected output:
 
 ```
-nutvisor: running build/serial-driver.bin (...) as a real-mode guest
-nutvisor: 16550 driver online
+nutvisor: running build/hello64.bin (...) in 64-bit long mode
+nutvisor: long mode online
 nutvisor: guest halted cleanly
 ```
 
-The middle line is printed *by a guest UART driver*, from inside the VM.
+The middle line is printed *by a 64-bit guest UART driver*, from inside the VM.
 
 ## 4. Running a different guest
 
@@ -62,17 +62,19 @@ The middle line is printed *by a guest UART driver*, from inside the VM.
 
 ```bash
 make all
-./build/nutvisor build/hello16.bin
+./build/nutvisor --long build/hello64.bin
+./build/nutvisor --real build/hello16.bin
 ```
 
-Later milestones add long-mode and ELF guests you can pass the same way.
+An explicit image without a mode flag retains the original real-mode interface.
 
 ## 5. Make targets
 
 | Command | Purpose |
 |---------|---------|
 | `make all` | Build the VMM and guest image(s). |
-| `make run` | Ensure `/dev/kvm`, build, and run the UART-driver guest. |
+| `make run` | Ensure `/dev/kvm`, build, and run the 64-bit guest. |
+| `make run-serial` | Run the milestone-1 UART-driver guest. |
 | `make run-hello16` | Run the original milestone-0 guest. |
 | `make check-kvm` | Just ensure `/dev/kvm` is available. |
 | `make clean` | Delete `build/`. |

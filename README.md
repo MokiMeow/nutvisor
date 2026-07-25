@@ -57,14 +57,14 @@ it runs."*
 
 ```bash
 ./scripts/setup-kvm.sh   # ensure /dev/kvm is available (loads the module)
-make run                 # build the VMM + guests and run the UART-driver guest
+make run                 # build the VMM + guests and run the 64-bit guest
 ```
 
 Expected output:
 
 ```
-nutvisor: running build/serial-driver.bin (...) as a real-mode guest
-nutvisor: 16550 driver online
+nutvisor: running build/hello64.bin (...) in 64-bit long mode
+nutvisor: long mode online
 nutvisor: guest halted cleanly
 ```
 
@@ -74,15 +74,16 @@ requirements (Windows 11 + WSL2 exposes VT-x by default).
 
 ## Status
 
-Milestones 0–1 are complete: the VMM now runs a guest that configures and polls
-an emulated 16550 UART through a reusable port-I/O router. The road to booting a full kernel guest is
+Milestones 0–2 are complete: the VMM now builds an in-guest GDT and page tables,
+enters a vCPU directly in 64-bit long mode, and runs a polling UART guest. The
+road to booting a full kernel guest is
 tracked in [docs/04-roadmap.md](docs/04-roadmap.md).
 
 | # | Milestone | State |
 |---|-----------|-------|
 | 0 | KVM bring-up + real-mode "hello" guest | ✅ done |
 | 1 | Serial device model + port-I/O dispatch | ✅ done |
-| 2 | 64-bit long-mode guest (GDT + paging setup) | ⬜ |
+| 2 | 64-bit long-mode guest (GDT + paging setup) | ✅ done |
 | 3 | Memory-mapped I/O device emulation | ⬜ |
 | 4 | ELF64 guest loader (boot a kernel from a file) | ⬜ |
 | 5 | CPUID filtering + robust exit handling | ⬜ |
