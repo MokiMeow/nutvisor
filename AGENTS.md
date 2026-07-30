@@ -1,4 +1,4 @@
-# AGENTS.md — how this repo is built
+# AGENTS.md: how this repo is built
 
 The working agreement for this repository: anyone contributing to nutvisor should
 read it fully before making changes. It defines the roles, rules,
@@ -10,9 +10,9 @@ build/verify commands, and the milestone path from "runs a real-mode guest" to
 
 ## 1. How the work is organised
 
-- **Planning** — plans the work, defines each milestone and its Definition
+- **Planning**: plans the work, defines each milestone and its Definition
   of Done, reviews diffs, keeps docs honest. Decides *what* and *in what order*.
-- **Implementation** — proceed one milestone at a time against the spec in
+- **Implementation**: proceed one milestone at a time against the spec in
   `docs/milestones/`, keeping the build green and the guest running.
 
 The loop: **pick the lowest-numbered unfinished milestone → implement it →
@@ -35,7 +35,7 @@ milestones, still one verified commit at a time.)
 4. **New `.c` → `src/`, new `.h` → `include/`, new guest → `guests/`.** The
    Makefile auto-discovers `src/*.c`; add guest build rules explicitly.
 5. **No dependencies.** Only libc and the Linux headers (`<linux/kvm.h>`). No
-   external VMM libraries — the point is to write it.
+   external VMM libraries: the point is to write it.
 6. **No feature without a doc.** When a milestone adds a capability (long mode,
    MMIO, ELF loading), its concept doc in `docs/` must be accurate when it lands.
 7. **Small, honest commits** (see §5).
@@ -60,7 +60,7 @@ Run from the repo root on WSL2 / Linux. The environment needs `/dev/kvm`
    what `.github/workflows/ci.yml` runs where KVM is usable).
 
 **A trap worth knowing:** GitHub's Ubuntu runners *do* ship `/dev/kvm`, but
-root-only — so testing `[ -e /dev/kvm ]` passes and the guest then fails with
+root-only, so testing `[ -e /dev/kvm ]` passes and the guest then fails with
 `Permission denied`. Always check `[ -r /dev/kvm ] && [ -w /dev/kvm ]`. CI
 installs a udev rule to open the device up, runs the guest for real, and only
 skips if the device is genuinely unusable.
@@ -71,7 +71,7 @@ Never claim a milestone is done without having actually run its guest.
 
 - **C**: C (gnu11), 4-space indent, K&R braces, `snake_case`, `UPPER_CASE` for
   macros. Check every `ioctl`/`mmap`/`open` return value and `perror` on
-  failure — VMM bugs are almost always an unchecked syscall.
+  failure: VMM bugs are almost always an unchecked syscall.
 - **Structure**: keep KVM lifecycle in `vm.c`, one device per file
   (`serial.c`, later `mmio.c`, etc.), guest loading separate from running.
 - **Assembly/guests**: NASM, `-f bin` for flat real-mode blobs, ELF for kernel
@@ -111,16 +111,16 @@ the real Nutshell kernel via multiboot2 emulation.
 - Do not link an existing VMM/emulator library; write the KVM calls yourself.
 - Do not skip the run/verify step because "the ioctls look right."
 - Do not switch to `-std=c11` (breaks POSIX symbols) or add `-Werror`-defeating
-  pragmas — fix the cause.
+  pragmas: fix the cause.
 - Do not assume `/dev/kvm` persists across a WSL restart; `make run` reloads it.
 
 ## 8. Tools reference
 
-- **gcc** — host C compiler (`-std=gnu11`).
-- **NASM** — assembles guest blobs (`-f bin` for real-mode, ELF for kernels).
-- **Linux KVM** — `<linux/kvm.h>` (from the installed kernel headers) is the
+- **gcc**: host C compiler (`-std=gnu11`).
+- **NASM**: assembles guest blobs (`-f bin` for real-mode, ELF for kernels).
+- **Linux KVM**: `<linux/kvm.h>` (from the installed kernel headers) is the
   whole API surface; there is nothing else to install.
-- **`/dev/kvm`** — the device the whole project talks to. `make run` ensures it.
+- **`/dev/kvm`**: the device the whole project talks to. `make run` ensures it.
 
 Build one milestone, run its guest, prove it with output, document it, commit.
 Then the next.

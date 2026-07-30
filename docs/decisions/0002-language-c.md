@@ -1,4 +1,4 @@
-# ADR 0002 — Write the VMM in C (gnu11)
+# ADR 0002: Write the VMM in C (gnu11)
 
 **Status:** accepted · **Date:** 2026
 
@@ -16,7 +16,7 @@ Write it in **C**, compiled with **`-std=gnu11`**.
 - The KVM API is a C API. Every reference (the kernel docs, LWN's "Using the KVM
   API", QEMU/kvmtool source) is in C, so the mapping from documentation to code
   is direct.
-- The work is struct-filling and syscall-checking — C's natural territory —
+- The work is struct-filling and syscall-checking, C's natural territory,
   which keeps the VMM small and the KVM interaction unmediated.
 - `-std=gnu11` (not strict `-std=c11`) is required so POSIX/Linux symbols like
   `O_CLOEXEC` and `MAP_ANONYMOUS` are declared without hand-rolling feature-test

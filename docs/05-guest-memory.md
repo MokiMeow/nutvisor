@@ -1,4 +1,4 @@
-# 05 — Guest memory
+# 05: Guest memory
 
 *Introduced in milestone 0; deepened in milestones 2 and 4.*
 
@@ -29,7 +29,7 @@ range. v1 uses one slot for all of low RAM. You'd add slots for:
 - a separate region for a loaded kernel at a high address,
 - read-only regions (`KVM_MEM_READONLY`) to trap writes,
 - holes that deliberately aren't backed, so accesses become `KVM_EXIT_MMIO`
-  (that's how MMIO devices work — see [docs/07](07-device-emulation.md)).
+  (that's how MMIO devices work: see [docs/07](07-device-emulation.md)).
 
 ## Layout as the guest grows
 
@@ -42,7 +42,7 @@ range. v1 uses one slot for all of low RAM. You'd add slots for:
 ## Gotchas
 
 - **Bounds-check every load.** `guest_addr + len` must fit in `mem_size`
-  (nutvisor's `vm_load_guest` does this) — a guest image that overruns silently
+  (nutvisor's `vm_load_guest` does this): a guest image that overruns silently
   corrupts adjacent guest memory.
 - **Alignment.** Page tables and some structures the guest expects must be
   page-aligned in guest-physical space; choose load addresses accordingly.

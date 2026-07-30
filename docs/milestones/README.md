@@ -16,13 +16,13 @@ one per pass; keep the build green and the guest running.
 
 ## Every milestone spec has
 
-- **Goal** — one sentence.
-- **Concepts** — what you'll learn.
-- **Tasks** — an ordered checklist.
-- **Files** — what to add/change.
-- **Definition of Done** — the objective bar; don't tick it without running the
+- **Goal**: one sentence.
+- **Concepts**: what you'll learn.
+- **Tasks**: an ordered checklist.
+- **Files**: what to add/change.
+- **Definition of Done**: the objective bar; don't tick it without running the
   guest and seeing the output.
-- **References** — the canonical sources.
+- **References**: the canonical sources.
 
 ## The loop (from AGENTS.md)
 

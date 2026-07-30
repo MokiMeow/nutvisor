@@ -1,4 +1,4 @@
-# Milestone 3 — MMIO device ✅ (done)
+# Milestone 3: MMIO device ✅ (done)
 
 **Goal:** handle `KVM_EXIT_MMIO` and emulate a memory-mapped device, so guests
 can talk to "hardware" by address as well as by port.
@@ -33,7 +33,7 @@ and a device that lives at an address instead of a port.
 
 ## References
 
-- Linux KVM API — `KVM_EXIT_MMIO` in [api.rst](https://www.kernel.org/doc/html/latest/virt/kvm/api.html)
-- [docs/07 — Device emulation](../07-device-emulation.md)
+- Linux KVM API: `KVM_EXIT_MMIO` in [api.rst](https://www.kernel.org/doc/html/latest/virt/kvm/api.html)
+- [docs/07: Device emulation](../07-device-emulation.md)
 
-**Next:** [Milestone 4 — ELF loader](milestone-4-elf-loader.md).
+**Next:** [Milestone 4: ELF loader](milestone-4-elf-loader.md).

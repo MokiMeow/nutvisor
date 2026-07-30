@@ -1,4 +1,4 @@
-# 09 — Testing & debugging
+# 09: Testing & debugging
 
 A hypervisor bug usually looks like a guest that silently triple-faults. These
 are the techniques that make nutvisor debuggable.
@@ -10,12 +10,12 @@ The first question is always "why did `KVM_RUN` return?". nutvisor reports
 unsupported numeric exit. When something goes wrong, that stderr line is your
 first clue:
 
-- **`KVM_EXIT_SHUTDOWN`** — the guest triple-faulted. Its initial CPU state or
+- **`KVM_EXIT_SHUTDOWN`**: the guest triple-faulted. Its initial CPU state or
   memory is wrong (bad segment, bad page tables, code not where `rip` points).
-- **`KVM_EXIT_FAIL_ENTRY`** — the CPU refused to enter the guest; the
+- **`KVM_EXIT_FAIL_ENTRY`**: the CPU refused to enter the guest; the
   `hardware_entry_failure_reason` is a VT-x code. Almost always an invalid
   `sregs` combination (e.g. long-mode bits set without valid paging).
-- **`unsupported KVM exit_reason=N`** — the guest used a device or feature the
+- **`unsupported KVM exit_reason=N`**: the guest used a device or feature the
   v1 model does not emulate; the following state dump shows where.
 
 ## Read the automatic register dump
@@ -29,7 +29,7 @@ run-fault` demonstrates this path and is expected to exit nonzero.
 ## Inspect guest memory directly
 
 Guest-physical memory is just `vm.mem`. After (or during) a run you can dump
-bytes at any guest address from the host — no debugger needed — to confirm your
+bytes at any guest address from the host, with no debugger needed, to confirm your
 loader put code where you think, or that the guest wrote what you expect.
 
 ## Single-step the guest
@@ -37,7 +37,7 @@ loader put code where you think, or that the guest wrote what you expect.
 KVM supports guest debugging via `KVM_SET_GUEST_DEBUG` (set
 `KVM_GUESTDBG_ENABLE | KVM_GUESTDBG_SINGLESTEP`); each instruction then returns a
 `KVM_EXIT_DEBUG`. Combined with a register dump per step, this walks the guest
-instruction by instruction — invaluable for a mode transition that dies after a
+instruction by instruction: invaluable for a mode transition that dies after a
 few instructions. (A `-gdb` bridge is a stretch goal.)
 
 ## Cross-check against QEMU
@@ -61,13 +61,13 @@ hung guest. CI always builds and runs this suite whenever `/dev/kvm` is usable.
 | `FAIL_ENTRY` entering long mode | `efer.LMA`/`cr0.PG`/`cr4.PAE`/`cr3` inconsistent |
 | Guest prints nothing | serial port mismatch, or guest uses a driver that polls LSR |
 | Garbage in guest `.bss` | ELF loader skipped the `p_memsz` zero-fill |
-| `open /dev/kvm: No such file` | module not loaded — `./scripts/setup-kvm.sh` |
-| `open /dev/kvm: Permission denied` | the device exists but this user cannot open it — `sudo usermod -aG kvm $USER`, then a new shell |
+| `open /dev/kvm: No such file` | module not loaded: `./scripts/setup-kvm.sh` |
+| `open /dev/kvm: Permission denied` | the device exists but this user cannot open it: `sudo usermod -aG kvm $USER`, then a new shell |
 
 ### Existence is not access
 
 The most annoying version of that last row: a check like `[ -e /dev/kvm ]`
 succeeds while `open()` still fails with `EACCES`. GitHub's Ubuntu runners are
-exactly this case — the device is there, owned by root. This cost a red CI run
+exactly this case: the device is there, owned by root. This cost a red CI run
 before the workflow was fixed. Always test `[ -r /dev/kvm ] && [ -w /dev/kvm ]`
 before deciding KVM is available.

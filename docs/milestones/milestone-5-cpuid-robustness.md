@@ -1,4 +1,4 @@
-# Milestone 5 — CPUID + robustness ✅ (done)
+# Milestone 5: CPUID + robustness ✅ (done)
 
 **Goal:** make the VMM robust enough to host a real kernel: a sane CPUID, and
 clean handling of every VM-exit reason.
@@ -37,7 +37,7 @@ queries CPUID early, and completing the VM-exit switch so nothing is "unhandled.
 
 ## References
 
-- Linux KVM API — `KVM_SET_CPUID2`, `KVM_GET_SUPPORTED_CPUID`
-- [docs/09 — Testing & debugging](../09-testing-and-debugging.md)
+- Linux KVM API: `KVM_SET_CPUID2`, `KVM_GET_SUPPORTED_CPUID`
+- [docs/09: Testing & debugging](../09-testing-and-debugging.md)
 
-**Next:** [Milestone 6 — Polish](milestone-6-polish.md).
+**Next:** [Milestone 6: Polish](milestone-6-polish.md).

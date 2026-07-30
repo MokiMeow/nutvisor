@@ -1,4 +1,4 @@
-# Milestone 0 — KVM hello ✅ (done)
+# Milestone 0: KVM hello ✅ (done)
 
 **Goal:** create a KVM virtual machine and run a real-mode guest that prints to
 serial and halts.
@@ -32,7 +32,7 @@ The KVM ioctl sequence, guest memory as a host `mmap`, the vCPU and its
 
 ## References
 
-- LWN — [Using the KVM API](https://lwn.net/Articles/658511/)
-- Linux — [KVM API docs](https://www.kernel.org/doc/html/latest/virt/kvm/api.html)
+- LWN: [Using the KVM API](https://lwn.net/Articles/658511/)
+- Linux: [KVM API docs](https://www.kernel.org/doc/html/latest/virt/kvm/api.html)
 
-**Next:** [Milestone 1 — Serial](milestone-1-serial.md).
+**Next:** [Milestone 1: Serial](milestone-1-serial.md).

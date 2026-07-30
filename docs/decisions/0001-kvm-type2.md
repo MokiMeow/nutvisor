@@ -1,4 +1,4 @@
-# ADR 0001 — Build a type-2 hypervisor on KVM (not VT-x from scratch)
+# ADR 0001: Build a type-2 hypervisor on KVM (not VT-x from scratch)
 
 **Status:** accepted · **Date:** 2026
 
@@ -18,8 +18,8 @@ Build a **type-2 VMM on the KVM API**.
 ## Rationale
 
 - KVM does exactly the part that *must* live in the kernel (VMCS management,
-  non-root entry), and exposes everything else — memory, vCPU registers, the
-  exit loop, device emulation — to user space. That "everything else" is the
+  non-root entry), and exposes everything else: memory, vCPU registers, the
+  exit loop and device emulation to user space. That "everything else" is the
   substance of building a hypervisor and is where the learning is.
 - A from-scratch VT-x implementation is a kernel-development project about one
   vendor's virtualization ISA (VMCS field encodings, EPT paging), not about how

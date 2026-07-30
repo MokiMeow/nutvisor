@@ -1,4 +1,4 @@
-# 01 — Getting started
+# 01: Getting started
 
 Everything here is free and local. On Windows, do all of this **inside WSL2**
 (Ubuntu). On Linux, run it directly.
@@ -22,7 +22,7 @@ Then ensure the device exists:
 ```
 
 WSL2 does **not** persist loaded kernel modules across a restart, so `/dev/kvm`
-may disappear after `wsl --shutdown`. That's fine — `make run` reloads the KVM
+may disappear after `wsl --shutdown`. That's fine: `make run` reloads the KVM
 module automatically, and you can always re-run the setup script.
 
 If `/dev/kvm` still can't be created, check:
@@ -90,13 +90,13 @@ retain the original real-mode interface unless `--long` is supplied.
 
 ## Troubleshooting
 
-- **`open /dev/kvm: No such file or directory`** — run `./scripts/setup-kvm.sh`;
+- **`open /dev/kvm: No such file or directory`**: run `./scripts/setup-kvm.sh`;
   if it fails, nested virtualization isn't available (see §1).
-- **`open /dev/kvm: Permission denied`** — your user isn't in the `kvm` group.
+- **`open /dev/kvm: Permission denied`**: your user isn't in the `kvm` group.
   On this project's WSL setup the default user is root, so this shouldn't occur;
   otherwise `sudo usermod -aG kvm $USER` and restart the shell.
-- **`KVM_EXIT_SHUTDOWN` / guest shutdown** — the guest triple-faulted. See
+- **`KVM_EXIT_SHUTDOWN` / guest shutdown**: the guest triple-faulted. See
   [docs/09](09-testing-and-debugging.md).
-- **`unsupported KVM exit_reason=N`** — the guest requested a KVM exit the v1
+- **`unsupported KVM exit_reason=N`**: the guest requested a KVM exit the v1
   device model does not implement; include the following register dump in a
   bug report.

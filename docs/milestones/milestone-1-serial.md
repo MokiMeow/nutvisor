@@ -1,7 +1,7 @@
-# Milestone 1 — Serial device model ✅ (done)
+# Milestone 1: Serial device model ✅ (done)
 
 **Goal:** a proper port-I/O dispatch layer and a fuller 16550 COM1 model, so a
-guest *driver* (not just raw `out`s) works — the foundation for a kernel guest.
+guest *driver* (not just raw `out`s) works: the foundation for a kernel guest.
 
 ## Concepts
 
@@ -18,7 +18,7 @@ and a device-dispatch table so `vm.c` doesn't grow an `if` per device.
 - **Deferred optional (post-v1):** feed host stdin to the guest via the receive
   register + LSR data-ready bit, so an interactive guest can read input.
 - [x] Add a guest (`guests/serial-driver.asm` or C) that programs the UART like
-      a driver would (poll LSR, then write) and prints a message — proving the
+      a driver would (poll LSR, then write) and prints a message: proving the
       model, not just raw `out`.
 
 ## Files
@@ -35,7 +35,7 @@ and a device-dispatch table so `vm.c` doesn't grow an `if` per device.
 
 ## References
 
-- OSDev Wiki — [Serial Ports](https://wiki.osdev.org/Serial_Ports)
-- [docs/07 — Device emulation](../07-device-emulation.md)
+- OSDev Wiki: [Serial Ports](https://wiki.osdev.org/Serial_Ports)
+- [docs/07: Device emulation](../07-device-emulation.md)
 
-**Next:** [Milestone 2 — Long mode](milestone-2-longmode.md).
+**Next:** [Milestone 2: Long mode](milestone-2-longmode.md).

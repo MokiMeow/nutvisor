@@ -1,4 +1,4 @@
-# ADR 0003 — Reliable purpose-built guests first, Nutshell as a stretch
+# ADR 0003: Reliable purpose-built guests first, Nutshell as a stretch
 
 **Status:** accepted · **Date:** 2026
 
@@ -21,7 +21,7 @@ real Nutshell kernel a documented stretch goal**, not a required milestone.
   Purpose-built guests let us verify one VMM capability at a time (serial, long
   mode, MMIO, ELF loading) without also debugging a full kernel's expectations.
 - The "I wrote the VM and the OS it runs" story is satisfied by a 64-bit ELF
-  guest kernel we write — Nutshell-the-multiboot-kernel is a bonus, not the bar.
+  guest kernel we write: Nutshell-the-multiboot-kernel is a bonus, not the bar.
 - Multiboot2 emulation (building the info structure, protected-mode entry) is a
   meaningful project in itself; scoping it as a stretch keeps `v1.0.0`
   achievable and honest.

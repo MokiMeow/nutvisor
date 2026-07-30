@@ -1,4 +1,4 @@
-# 02 — Architecture
+# 02: Architecture
 
 nutvisor is a single host process that owns one VM with one vCPU. The design is
 a thin lifecycle layer around KVM plus a set of device models behind the VM-exit

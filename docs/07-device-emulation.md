@@ -1,10 +1,10 @@
-# 07 — Device emulation
+# 07: Device emulation
 
 *Serial is milestone 0/1; MMIO is milestone 3.*
 
 A guest "talks to hardware" by executing I/O instructions or touching special
 memory. Each of those traps out as a VM exit, and the host code that answers it
-*is* the device. There is no magic — a device is a function behind an exit.
+*is* the device. There is no magic: a device is a function behind an exit.
 
 ## Port-I/O devices (serial, milestone 0/1)
 
@@ -22,8 +22,8 @@ if (serial_handles_port(port)) {
 ```
 
 A fuller 16550 (milestone 1) answers reads of the Line Status Register
-(`0x3FD`) with "ready" so a guest's *driver* — which polls LSR before writing —
-works, tracks DLAB/divisor, LCR, IER, FIFO, modem-control, and scratch-register
+(`0x3FD`) with "ready" so a guest's *driver*, which polls LSR before writing,
+works. It also tracks DLAB/divisor, LCR, IER, FIFO, modem-control, and scratch-register
 writes, and keeps configuration bytes from leaking to host output. A real kernel
 guest uses a driver, not raw `out`s, so this matters once the guest is Nutshell.
 
@@ -57,5 +57,5 @@ address-range dispatch table.
 
 - One device per file; each declares the ports/addresses it owns.
 - Devices never call KVM; they only read/write the buffers the exit hands them.
-- Keep reads honest — returning a plausible status register is often what makes
+- Keep reads honest: returning a plausible status register is often what makes
   a guest *driver* progress instead of hanging.

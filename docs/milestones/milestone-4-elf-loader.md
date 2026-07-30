@@ -1,7 +1,7 @@
-# Milestone 4 — ELF64 guest loader ✅ (done)
+# Milestone 4: ELF64 guest loader ✅ (done)
 
 **Goal:** load a 64-bit ELF kernel image from a file into guest memory and boot
-it — the "I wrote the VM and the OS it runs" milestone.
+it: the "I wrote the VM and the OS it runs" milestone.
 
 ## Concepts
 
@@ -11,7 +11,7 @@ The ELF64 header and program headers, `PT_LOAD` segments (`p_offset`,
 
 ## Tasks
 
-- [x] `src/loader.c` + `include/loader.h`: parse an ELF64 file — validate the
+- [x] `src/loader.c` + `include/loader.h`: parse an ELF64 file: validate the
       magic, 64-bit class, and x86-64 machine; iterate program headers.
 - [x] For each `PT_LOAD`: `memcpy` `p_filesz` bytes to `mem + p_paddr`, then
       zero-fill up to `p_memsz` (the guest's `.bss`).
@@ -36,6 +36,6 @@ The ELF64 header and program headers, `PT_LOAD` segments (`p_offset`,
 ## References
 
 - ELF-64 specification; `man 5 elf`
-- [docs/08 — ELF loading](../08-elf-loading.md)
+- [docs/08: ELF loading](../08-elf-loading.md)
 
-**Next:** [Milestone 5 — CPUID + robustness](milestone-5-cpuid-robustness.md).
+**Next:** [Milestone 5: CPUID + robustness](milestone-5-cpuid-robustness.md).

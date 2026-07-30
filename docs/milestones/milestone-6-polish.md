@@ -1,7 +1,7 @@
-# Milestone 6 — Polish (portfolio pass) ✅ (done)
+# Milestone 6: Polish (portfolio pass) ✅ (done)
 
-**Goal:** turn a working hypervisor into a repo that impresses on sight —
-proof, presentation, repeatability — and tag `v1.0.0`.
+**Goal:** turn a working hypervisor into a repo that impresses on sight through
+proof, presentation, and repeatability, then tag `v1.0.0`.
 
 ## Tasks
 
@@ -14,8 +14,8 @@ proof, presentation, repeatability — and tag `v1.0.0`.
       failure.
 
 ### Presentation
-- [x] Record a short demo (asciinema or a GIF) of a guest — ideally the
-      milestone-4 guest kernel — booting inside nutvisor and printing output.
+- [x] Record a short demo (asciinema or a GIF) of a guest: ideally the
+      milestone-4 guest kernel: booting inside nutvisor and printing output.
       Embed it at the top of the README.
 - [x] Add an architecture diagram / "how a VM exit flows" section to the README
       (link to [docs/03](../03-kvm-api.md)).
@@ -33,11 +33,11 @@ proof, presentation, repeatability — and tag `v1.0.0`.
 - [x] README opens with the demo and a crisp description.
 - [x] `v1.0.0` tagged. The repo reads as finished, not abandoned.
 
-## Stretch goal (the headline) — boot Nutshell
+## Stretch goal (the headline): boot Nutshell
 
 Attempt to boot the real Nutshell kernel (`../nutshell`) as the guest by
 emulating the multiboot2 hand-off: load its ELF, build a multiboot2 info
 structure in guest memory, set `eax` to the multiboot2 magic and `ebx` to the
 info pointer, and enter 32-bit protected mode at the kernel's entry. Document the
-result whether or not it fully boots — the attempt and findings are themselves
+result whether or not it fully boots: the attempt and findings are themselves
 worth showing. Ship `v1.0.0` first; this is a bonus.

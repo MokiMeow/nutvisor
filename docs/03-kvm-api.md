@@ -1,4 +1,4 @@
-# 03 — The KVM API
+# 03: The KVM API
 
 This is the API the whole project is built on. It is a set of `ioctl`s on three
 file descriptors: the KVM subsystem, a VM, and a vCPU. This doc explains the
@@ -18,8 +18,8 @@ open("/dev/kvm")  ── the KVM subsystem (system-wide)
 
 ## Complete bring-up sequence
 
-1. **`open("/dev/kvm", O_RDWR)`** — the handle to KVM.
-2. **`ioctl(kvm, KVM_GET_API_VERSION)`** — must be `KVM_API_VERSION` (12); a
+1. **`open("/dev/kvm", O_RDWR)`**: the handle to KVM.
+2. **`ioctl(kvm, KVM_GET_API_VERSION)`**: must be `KVM_API_VERSION` (12); a
    sanity check that the ABI matches.
 3. **`ioctl(kvm, KVM_CREATE_VM)`** → `vm_fd`.
 4. **Guest memory**: `mmap` an anonymous region on the host, then
@@ -74,8 +74,8 @@ device's response.
 
 ## Registers: two structs
 
-- **`kvm_regs`** — the general-purpose registers, `rip`, `rsp`, `rflags`.
-- **`kvm_sregs`** — the "special" registers: segment descriptors
+- **`kvm_regs`**: the general-purpose registers, `rip`, `rsp`, `rflags`.
+- **`kvm_sregs`**: the "special" registers: segment descriptors
   (`cs`, `ds`, ...), and control registers `cr0/cr2/cr3/cr4`, `efer`. This is
   what you change to move the guest between real, protected, and long mode
   (see [docs/06](06-vcpu-and-modes.md)).
@@ -87,10 +87,10 @@ device's response.
   `rip`. nutvisor does exactly this in `vm_set_real_mode`.
 - **`KVM_SET_USER_MEMORY_REGION` order**: set memory *before* running; changing
   regions while running needs care.
-- **Always check `ioctl` return values** — a `-1` with `errno` is how almost
+- **Always check `ioctl` return values**: a `-1` with `errno` is how almost
   every VMM bug announces itself.
 
 ## References
 
-- LWN — [Using the KVM API](https://lwn.net/Articles/658511/)
-- Linux — [Documentation/virt/kvm/api.rst](https://www.kernel.org/doc/html/latest/virt/kvm/api.html)
+- LWN: [Using the KVM API](https://lwn.net/Articles/658511/)
+- Linux: [Documentation/virt/kvm/api.rst](https://www.kernel.org/doc/html/latest/virt/kvm/api.html)

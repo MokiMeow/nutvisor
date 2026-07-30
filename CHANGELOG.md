@@ -6,7 +6,11 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-## [1.0.0] — 2026-07-25
+### Changed
+- Expanded the README with explicit limitations and a complete documentation
+  map, and standardized first-party Markdown punctuation.
+
+## [1.0.0]: 2026-07-25
 
 ### Added
 - Milestone 6: an end-to-end `make test` suite covering every guest, MMIO
@@ -36,7 +40,7 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   status, and scratch-register behaviour.
 - A driver-style real-mode guest that configures COM1, polls transmitter
   readiness, prints `nutvisor: 16550 driver online`, and halts.
-- Milestone 0: KVM bring-up — open `/dev/kvm`, create a VM, guest memory, and a
+- Milestone 0: KVM bring-up: open `/dev/kvm`, create a VM, guest memory, and a
   vCPU; put the vCPU in real mode; run a 16-bit guest that prints to COM1 and
   halts, servicing `KVM_EXIT_IO` and `KVM_EXIT_HLT`.
 - A minimal COM1 serial device model on the host side.
@@ -45,6 +49,6 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - GitHub Actions build infrastructure with conditional `/dev/kvm` access.
 - Documentation set under `docs/` and the `AGENTS.md` operating manual.
 
-## [0.1.0] — milestone 0
+## [0.1.0]: milestone 0
 - First working version: runs a real-mode guest inside a KVM VM and prints its
   output on the host.

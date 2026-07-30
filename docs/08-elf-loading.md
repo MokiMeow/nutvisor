@@ -1,4 +1,4 @@
-# 08 — ELF loading
+# 08: ELF loading
 
 *Milestone 4.* Loading a kernel guest means parsing an ELF64 file and copying
 its segments into guest-physical memory, then entering at its entry point.
@@ -18,7 +18,7 @@ set rip = ehdr.e_entry;
 ```
 
 The `p_memsz > p_filesz` zero-fill is the guest's `.bss`; forgetting it leaves
-garbage where the kernel expects zeros — a classic, silent bug.
+garbage where the kernel expects zeros: a classic, silent bug.
 
 ## Physical vs. virtual addresses
 
