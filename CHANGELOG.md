@@ -7,6 +7,9 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Changed
+- Bounds-check KVM shared I/O payload offsets, access widths, and repetition
+  counts before dereferencing them, preventing out-of-bounds accesses on
+  malformed or overflowing spans. Add host-only `make test-io-bounds` coverage.
 - Expanded the README with explicit limitations and a complete documentation
   map, and standardized first-party Markdown punctuation.
 

@@ -94,3 +94,12 @@ device's response.
 
 - LWN: [Using the KVM API](https://lwn.net/Articles/658511/)
 - Linux: [Documentation/virt/kvm/api.rst](https://www.kernel.org/doc/html/latest/virt/kvm/api.html)
+
+## Exit payload bounds
+
+Before dereferencing a `KVM_EXIT_IO` payload in the shared `kvm_run` mapping,
+the VMM verifies that `data_offset`, `count`, and access width describe a
+fully mapped byte span. `vm_io_span_valid()` uses division to avoid overflow
+from `offset + count * size`. Invalid spans return an error before any read or
+write. Normal port-I/O routing is unchanged. `make test-io-bounds` exercises
+boundary conditions without a KVM device.

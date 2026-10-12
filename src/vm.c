@@ -15,6 +15,7 @@
 
 #include "cpuid.h"
 #include "ioport.h"
+#include "io_bounds.h"
 #include "mmio.h"
 #include "serial.h"
 #include "vmm.h"
@@ -289,13 +290,18 @@ int vm_run(struct vm *vm) {
 
         case KVM_EXIT_IO: {
             uint16_t port = vm->run->io.port;
-            uint8_t *data = (uint8_t *)vm->run + vm->run->io.data_offset;
             uint8_t size = vm->run->io.size;
 
-            if (size == 0 || size > sizeof(uint32_t)) {
-                fprintf(stderr, "invalid I/O access size=%u\n", size);
+            if (!vm_io_span_valid(vm->run_size, vm->run->io.data_offset,
+                                  vm->run->io.count, size)) {
+                fprintf(stderr,
+                        "invalid KVM I/O span: offset=%llu count=%u size=%u\n",
+                        (unsigned long long)vm->run->io.data_offset,
+                        vm->run->io.count, size);
                 return -1;
             }
+            // Validate the shared-memory span before forming the pointer.
+            uint8_t *data = (uint8_t *)vm->run + vm->run->io.data_offset;
             for (uint32_t i = 0; i < vm->run->io.count; i++) {
                 uint8_t *item = data + (size_t)i * size;
                 uint32_t value = 0;

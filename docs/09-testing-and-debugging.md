@@ -71,3 +71,10 @@ succeeds while `open()` still fails with `EACCES`. GitHub's Ubuntu runners are
 exactly this case: the device is there, owned by root. This cost a red CI run
 before the workflow was fixed. Always test `[ -r /dev/kvm ] && [ -w /dev/kvm ]`
 before deciding KVM is available.
+
+## Host-only KVM metadata tests
+
+`make test-io-bounds` builds a pure bounds-check helper and exercises valid
+edge cases, offsets outside a shared mapping, zero/unsupported access widths,
+and overflow-sized repetition counts. No `/dev/kvm` is required. The complete
+`make test` continues running the real guest programs when KVM is available.
