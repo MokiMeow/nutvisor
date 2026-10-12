@@ -30,12 +30,17 @@ KERNEL_SRC := guests/kernel/entry.asm
 KERNEL_OBJ := $(BUILD)/kernel-entry.o
 KERNEL_ELF := guests/kernel/kernel.elf
 
-.PHONY: all test run run-fault run-mmio run-long run-serial run-hello16 check-kvm clean
+.PHONY: all test test-io-bounds run run-fault run-mmio run-long run-serial run-hello16 check-kvm clean
 
 all: $(VMM) $(GUEST_BIN) $(SERIAL_GUEST_BIN) $(LONG_GUEST_BIN) $(MMIO_GUEST_BIN) $(FAULT_GUEST_BIN) $(KERNEL_ELF)
 
-test: check-kvm all
+test: check-kvm all test-io-bounds
 	./scripts/self-test.sh
+
+# Exercise shared-mapping metadata validation even without /dev/kvm.
+test-io-bounds: | $(BUILD)
+	$(CC) $(CFLAGS) -Werror tests/io-bounds-test.c src/io_bounds.c -o $(BUILD)/io-bounds-test
+	./$(BUILD)/io-bounds-test
 
 $(BUILD):
 	mkdir -p $(BUILD)
