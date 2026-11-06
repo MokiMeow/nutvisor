@@ -6,17 +6,27 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
 
       - name: Install toolchain
         run: sudo apt-get update && sudo apt-get install -y gcc make nasm
 
-      - name: Build VMM and guests
-        run: make clean && make all
+      - name: Build VMM and guests with warnings as errors
+        run: make clean && make all CFLAGS='-std=gnu11 -Wall -Wextra -Werror -Iinclude -O2'
+
+      - name: Run hardware-free regression tests
+        run: make test-host
+
+      - name: Run AddressSanitizer and UndefinedBehaviorSanitizer
+        run: make sanitize
 
       # GitHub's Ubuntu runners do ship /dev/kvm, but it is root-only by
       # default, so simply testing that the file exists is not enough — the
@@ -39,6 +49,6 @@ jobs:
             SELFTEST_TIMEOUT=120 make test
           else
             echo "SKIP: /dev/kvm is present but not usable by this runner."
-            echo "The VMM built successfully; the guest suite is verified locally"
-            echo "on a host with nested virtualization (see docs/01-getting-started.md)."
+            echo "Host regression/sanitizer tests passed; guest execution was NOT verified."
+            echo "Run make test on a KVM host (see docs/01-getting-started.md)."
           fi

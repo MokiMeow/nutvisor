@@ -15,6 +15,10 @@ BUILD  := build
 VMM_SRC := $(wildcard src/*.c)
 VMM_OBJ := $(patsubst src/%.c,$(BUILD)/%.o,$(VMM_SRC))
 VMM     := $(BUILD)/nutvisor
+HEADERS := $(wildcard include/*.h)
+UNIT_TESTS := $(BUILD)/test-loader $(BUILD)/test-vm $(BUILD)/test-devices
+SANITIZER_FLAGS := -std=gnu11 -Wall -Wextra -Werror -Iinclude -O1 -g \
+    -fsanitize=address,undefined -fno-omit-frame-pointer
 
 GUEST_SRC := guests/hello16.asm
 GUEST_BIN := $(BUILD)/hello16.bin
@@ -30,21 +34,44 @@ KERNEL_SRC := guests/kernel/entry.asm
 KERNEL_OBJ := $(BUILD)/kernel-entry.o
 KERNEL_ELF := guests/kernel/kernel.elf
 
-.PHONY: all test run run-fault run-mmio run-long run-serial run-hello16 check-kvm clean
+.PHONY: all test test-host test-unit test-cli sanitize run run-fault run-mmio run-long run-serial run-hello16 check-kvm clean
 
 all: $(VMM) $(GUEST_BIN) $(SERIAL_GUEST_BIN) $(LONG_GUEST_BIN) $(MMIO_GUEST_BIN) $(FAULT_GUEST_BIN) $(KERNEL_ELF)
 
-test: check-kvm all
-	./scripts/self-test.sh
+test: test-host
+	$(MAKE) check-kvm
+	VMM=./$(VMM) BUILD_DIR=$(BUILD) ./scripts/self-test.sh
+
+test-unit: $(UNIT_TESTS)
+	$(BUILD)/test-loader
+	$(BUILD)/test-vm
+	$(BUILD)/test-devices
+
+test-cli: all
+	VMM=./$(VMM) BUILD_DIR=$(BUILD) ./scripts/host-test.sh
+
+test-host: test-unit test-cli
+
+sanitize:
+	$(MAKE) BUILD=build/sanitize CFLAGS="$(SANITIZER_FLAGS)" test-host
+
+$(BUILD)/test-loader: tests/test_loader.c src/loader.c $(HEADERS) | $(BUILD)
+	$(CC) $(CFLAGS) -UNDEBUG $(LDFLAGS) -o $@ tests/test_loader.c src/loader.c
+
+$(BUILD)/test-devices: tests/test_devices.c src/ioport.c src/serial.c src/mmio.c $(HEADERS) | $(BUILD)
+	$(CC) $(CFLAGS) -UNDEBUG $(LDFLAGS) -o $@ tests/test_devices.c src/ioport.c src/serial.c src/mmio.c
+
+$(BUILD)/test-vm: tests/test_vm.c src/vm.c $(HEADERS) | $(BUILD)
+	$(CC) $(CFLAGS) -UNDEBUG $(LDFLAGS) -o $@ tests/test_vm.c src/vm.c
 
 $(BUILD):
 	mkdir -p $(BUILD)
 
 $(BUILD)/%.o: src/%.c | $(BUILD)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
 
 $(VMM): $(VMM_OBJ)
-	$(CC) $(CFLAGS) -o $@ $(VMM_OBJ)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(VMM_OBJ)
 
 $(GUEST_BIN): $(GUEST_SRC) | $(BUILD)
 	$(NASM) -f bin $< -o $@
@@ -108,3 +135,5 @@ run-hello16: check-kvm $(VMM) $(GUEST_BIN)
 
 clean:
 	rm -rf $(BUILD) $(KERNEL_ELF)
+
+-include $(VMM_OBJ:.o=.d)

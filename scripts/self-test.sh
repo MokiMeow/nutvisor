@@ -16,7 +16,7 @@ run_success() {
     local name=$1
     shift
     last_log="$selftest_dir/$name.log"
-    if ! timeout --foreground "$timeout_seconds" "$@" >"$last_log" 2>&1; then
+    if ! timeout --foreground --kill-after=5s "$timeout_seconds" "$@" >"$last_log" 2>&1; then
         echo "[FAIL] $name: expected success" >&2
         cat "$last_log" >&2
         exit 1
@@ -24,11 +24,12 @@ run_success() {
 }
 
 run_failure() {
-    local name=$1
+    local name=$1 status=0
     shift
     last_log="$selftest_dir/$name.log"
-    if timeout --foreground "$timeout_seconds" "$@" >"$last_log" 2>&1; then
-        echo "[FAIL] $name: expected failure" >&2
+    timeout --foreground --kill-after=5s "$timeout_seconds" "$@" >"$last_log" 2>&1 || status=$?
+    if [[ "$status" != 1 ]]; then
+        echo "[FAIL] $name: expected exit 1, got $status (timeouts/signals are failures)" >&2
         cat "$last_log" >&2
         exit 1
     fi
@@ -43,7 +44,8 @@ require_marker() {
     fi
 }
 
-vmm=./build/nutvisor
+vmm=${VMM:-./build/nutvisor}
+build_dir=${BUILD_DIR:-build}
 
 run_success elf-kernel "$vmm" guests/kernel/kernel.elf
 require_marker "nutvisor: cpuid online"
@@ -51,21 +53,21 @@ require_marker "nutvisor: elf64 kernel online"
 require_marker "nutvisor: guest halted cleanly"
 echo "[ok] elf-kernel"
 
-run_success mmio "$vmm" --long build/mmio-demo.bin
+run_success mmio "$vmm" --long "$build_dir/mmio-demo.bin"
 require_marker "nutvisor: mmio console online"
 require_marker "nutvisor: guest requested exit status=0"
 require_marker "nutvisor: guest exited cleanly"
 echo "[ok] mmio"
 
-run_success long-mode "$vmm" --long build/hello64.bin
+run_success long-mode "$vmm" --long "$build_dir/hello64.bin"
 require_marker "nutvisor: long mode online"
 echo "[ok] long-mode"
 
-run_success serial-driver "$vmm" --real build/serial-driver.bin
+run_success serial-driver "$vmm" --real "$build_dir/serial-driver.bin"
 require_marker "nutvisor: 16550 driver online"
 echo "[ok] serial-driver"
 
-run_success real-mode "$vmm" --real build/hello16.bin
+run_success real-mode "$vmm" --real "$build_dir/hello16.bin"
 require_marker "nutvisor: the guest is alive inside your hypervisor"
 echo "[ok] real-mode"
 
@@ -73,11 +75,11 @@ run_failure malformed-elf "$vmm" --elf README.md
 require_marker "ELF: invalid magic"
 echo "[ok] malformed-elf"
 
-run_failure short-elf "$vmm" --elf build/fault64.bin
+run_failure short-elf "$vmm" --elf "$build_dir/fault64.bin"
 require_marker "ELF: file is smaller than the ELF64 header"
 echo "[ok] short-elf"
 
-run_failure triple-fault "$vmm" --long build/fault64.bin
+run_failure triple-fault "$vmm" --long "$build_dir/fault64.bin"
 require_marker "guest shutdown (triple fault?)"
 require_marker "registers: rip="
 require_marker "control: cr0="

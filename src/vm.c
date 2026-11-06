@@ -16,15 +16,9 @@
 #include "cpuid.h"
 #include "ioport.h"
 #include "mmio.h"
+#include "memory_layout.h"
 #include "serial.h"
 #include "vmm.h"
-
-#define PAGE_SIZE       0x1000ULL
-#define PAGE_TABLE_PML4 0x2000ULL
-#define PAGE_TABLE_PDPT 0x3000ULL
-#define PAGE_TABLE_PD   0x4000ULL
-#define GDT_ADDRESS     0x5000ULL
-#define LONG_MODE_STACK 0x800000ULL
 
 #define PAGE_PRESENT    (1ULL << 0)
 #define PAGE_WRITABLE   (1ULL << 1)
@@ -42,6 +36,7 @@
 #define GDT_DATA_ENTRY    0x00CF93000000FFFFULL
 
 int vm_create(struct vm *vm, size_t mem_size) {
+    if (!vm) { errno = EINVAL; return -1; }
     memset(vm, 0, sizeof(*vm));
     vm->kvm_fd = -1;
     vm->vm_fd = -1;
@@ -50,25 +45,32 @@ int vm_create(struct vm *vm, size_t mem_size) {
     vm->run = MAP_FAILED;
     vm->mem_size = mem_size;
 
+    if (mem_size == 0 || mem_size % VM_PAGE_SIZE != 0) {
+        errno = EINVAL;
+        goto fail;
+    }
+
     vm->kvm_fd = open("/dev/kvm", O_RDWR | O_CLOEXEC);
     if (vm->kvm_fd < 0) {
         perror("open /dev/kvm (run ./scripts/setup-kvm.sh?)");
-        return -1;
+        goto fail;
     }
 
     int api = ioctl(vm->kvm_fd, KVM_GET_API_VERSION, 0);
     if (api != KVM_API_VERSION) {
         fprintf(stderr, "unexpected KVM API version %d (want %d)\n",
                 api, KVM_API_VERSION);
-        return -1;
+        if (api >= 0)
+            errno = EPROTO;
+        goto fail;
     }
 
     vm->vm_fd = ioctl(vm->kvm_fd, KVM_CREATE_VM, 0);
-    if (vm->vm_fd < 0) { perror("KVM_CREATE_VM"); return -1; }
+    if (vm->vm_fd < 0) { perror("KVM_CREATE_VM"); goto fail; }
 
     vm->mem = mmap(NULL, mem_size, PROT_READ | PROT_WRITE,
                    MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-    if (vm->mem == MAP_FAILED) { perror("mmap guest memory"); return -1; }
+    if (vm->mem == MAP_FAILED) { perror("mmap guest memory"); goto fail; }
 
     struct kvm_userspace_memory_region region = {
         .slot = 0,
@@ -78,24 +80,36 @@ int vm_create(struct vm *vm, size_t mem_size) {
     };
     if (ioctl(vm->vm_fd, KVM_SET_USER_MEMORY_REGION, &region) < 0) {
         perror("KVM_SET_USER_MEMORY_REGION");
-        return -1;
+        goto fail;
     }
 
     vm->vcpu_fd = ioctl(vm->vm_fd, KVM_CREATE_VCPU, 0);
-    if (vm->vcpu_fd < 0) { perror("KVM_CREATE_VCPU"); return -1; }
+    if (vm->vcpu_fd < 0) { perror("KVM_CREATE_VCPU"); goto fail; }
     if (cpuid_setup(vm) < 0)
-        return -1;
+        goto fail;
 
     int run_size = ioctl(vm->kvm_fd, KVM_GET_VCPU_MMAP_SIZE, 0);
-    if (run_size < 0) { perror("KVM_GET_VCPU_MMAP_SIZE"); return -1; }
+    if (run_size < 0) { perror("KVM_GET_VCPU_MMAP_SIZE"); goto fail; }
+    if ((size_t)run_size < sizeof(struct kvm_run)) {
+        fprintf(stderr, "KVM run mapping is too small: %d bytes\n", run_size);
+        errno = EPROTO;
+        goto fail;
+    }
     vm->run_size = (size_t)run_size;
 
     vm->run = mmap(NULL, vm->run_size, PROT_READ | PROT_WRITE,
                    MAP_SHARED, vm->vcpu_fd, 0);
-    if (vm->run == MAP_FAILED) { perror("mmap kvm_run"); return -1; }
+    if (vm->run == MAP_FAILED) { perror("mmap kvm_run"); goto fail; }
 
     serial_reset();
     return 0;
+
+fail: {
+        int saved_errno = errno;
+        vm_destroy(vm);
+        errno = saved_errno;
+        return -1;
+    }
 }
 
 int vm_load_guest(struct vm *vm, uint64_t guest_addr, const void *code,
@@ -169,24 +183,24 @@ static struct kvm_segment data_segment(void) {
 }
 
 static int build_long_mode_tables(struct vm *vm) {
-    if (vm->mem_size < LONG_MODE_STACK + PAGE_SIZE) {
+    if (vm->mem_size < VM_LONG_MODE_STACK + VM_PAGE_SIZE) {
         fprintf(stderr, "long mode requires at least 0x%llx bytes of RAM\n",
-                (unsigned long long)(LONG_MODE_STACK + PAGE_SIZE));
+                (unsigned long long)(VM_LONG_MODE_STACK + VM_PAGE_SIZE));
         return -1;
     }
 
-    uint64_t *pml4 = (uint64_t *)(vm->mem + PAGE_TABLE_PML4);
-    uint64_t *pdpt = (uint64_t *)(vm->mem + PAGE_TABLE_PDPT);
-    uint64_t *pd = (uint64_t *)(vm->mem + PAGE_TABLE_PD);
-    uint64_t *gdt = (uint64_t *)(vm->mem + GDT_ADDRESS);
+    uint64_t *pml4 = (uint64_t *)(vm->mem + VM_PAGE_TABLE_PML4);
+    uint64_t *pdpt = (uint64_t *)(vm->mem + VM_PAGE_TABLE_PDPT);
+    uint64_t *pd = (uint64_t *)(vm->mem + VM_PAGE_TABLE_PD);
+    uint64_t *gdt = (uint64_t *)(vm->mem + VM_GDT_ADDRESS);
 
-    memset(pml4, 0, PAGE_SIZE);
-    memset(pdpt, 0, PAGE_SIZE);
-    memset(pd, 0, PAGE_SIZE);
-    memset(gdt, 0, PAGE_SIZE);
+    memset(pml4, 0, VM_PAGE_SIZE);
+    memset(pdpt, 0, VM_PAGE_SIZE);
+    memset(pd, 0, VM_PAGE_SIZE);
+    memset(gdt, 0, VM_PAGE_SIZE);
 
-    pml4[0] = PAGE_TABLE_PDPT | PAGE_PRESENT | PAGE_WRITABLE;
-    pdpt[0] = PAGE_TABLE_PD | PAGE_PRESENT | PAGE_WRITABLE;
+    pml4[0] = VM_PAGE_TABLE_PDPT | PAGE_PRESENT | PAGE_WRITABLE;
+    pdpt[0] = VM_PAGE_TABLE_PD | PAGE_PRESENT | PAGE_WRITABLE;
     for (uint64_t i = 0; i < 512; i++)
         pd[i] = (i << 21) | PAGE_PRESENT | PAGE_WRITABLE | PAGE_LARGE;
 
@@ -200,8 +214,8 @@ int vm_set_long_mode(struct vm *vm, uint64_t entry) {
     struct kvm_sregs sregs;
     struct kvm_regs regs = {
         .rip = entry,
-        .rsp = LONG_MODE_STACK,
-        .rbp = LONG_MODE_STACK,
+        .rsp = VM_LONG_MODE_STACK,
+        .rbp = VM_LONG_MODE_STACK,
         .rflags = 0x2,
     };
 
@@ -223,11 +237,11 @@ int vm_set_long_mode(struct vm *vm, uint64_t entry) {
      *   efer.LME=1, efer.LMA=1, cs.L=1, cs.DB=0.
      * cr3 points at a PML4 -> PDPT -> 2 MiB-page PD identity mapping 1 GiB.
      */
-    sregs.cr3 = PAGE_TABLE_PML4;
+    sregs.cr3 = VM_PAGE_TABLE_PML4;
     sregs.cr4 |= CR4_PAE;
     sregs.cr0 |= CR0_PE | CR0_PG;
     sregs.efer |= EFER_LME | EFER_LMA;
-    sregs.gdt.base = GDT_ADDRESS;
+    sregs.gdt.base = VM_GDT_ADDRESS;
     sregs.gdt.limit = (3U * sizeof(uint64_t)) - 1U;
     sregs.cs = code_segment();
     sregs.ds = data_segment();
@@ -276,7 +290,62 @@ static void vm_dump_registers(struct vm *vm) {
             (unsigned long long)sregs.efer);
 }
 
+/* KVM ABI section 5: data_offset is relative to kvm_run and the data is
+ * a packed array. Validate the entire array before constructing any pointer
+ * or dispatching device callbacks, including on 32-bit hosts. */
+int vm_handle_io(struct vm *vm) {
+    if (!vm || !vm->run || vm->run == MAP_FAILED ||
+        vm->run_size < sizeof(struct kvm_run)) {
+        errno = EINVAL;
+        return -1;
+    }
+    const struct kvm_run *run = vm->run;
+    const uint8_t size = run->io.size;
+    const uint8_t direction = run->io.direction;
+    const uint32_t count = run->io.count;
+    const uint16_t port = run->io.port;
+    const uint64_t offset = run->io.data_offset;
+
+    if (run->exit_reason != KVM_EXIT_IO ||
+        (size != 1 && size != 2 && size != 4) || count == 0 ||
+        (direction != KVM_EXIT_IO_IN && direction != KVM_EXIT_IO_OUT) ||
+        offset < sizeof(struct kvm_run) || offset > vm->run_size ||
+        count > (vm->run_size - (size_t)offset) / size) {
+        fprintf(stderr, "invalid KVM I/O exit metadata\n");
+        errno = EPROTO;
+        return -1;
+    }
+
+    uint8_t *data = (uint8_t *)vm->run + (size_t)offset;
+    for (uint32_t i = 0; i < count; i++) {
+        uint8_t *item = data + (size_t)i * size;
+        uint32_t value = 0;
+
+        if (direction == KVM_EXIT_IO_OUT) {
+            memcpy(&value, item, size);
+            if (!ioport_write(port, size, value)) {
+                fprintf(stderr, "unhandled I/O write port=0x%x size=%u\n",
+                        port, size);
+                return -1;
+            }
+        } else {
+            if (!ioport_read(port, size, &value)) {
+                fprintf(stderr, "unhandled I/O read port=0x%x size=%u\n",
+                        port, size);
+                return -1;
+            }
+            memcpy(item, &value, size);
+        }
+    }
+    return 0;
+}
+
 int vm_run(struct vm *vm) {
+    if (!vm || !vm->run || vm->run == MAP_FAILED ||
+        vm->run_size < sizeof(struct kvm_run) || vm->vcpu_fd < 0) {
+        errno = EINVAL;
+        return -1;
+    }
     for (;;) {
         if (ioctl(vm->vcpu_fd, KVM_RUN, 0) < 0) {
             perror("KVM_RUN");
@@ -287,37 +356,10 @@ int vm_run(struct vm *vm) {
         case KVM_EXIT_HLT:
             return 0;
 
-        case KVM_EXIT_IO: {
-            uint16_t port = vm->run->io.port;
-            uint8_t *data = (uint8_t *)vm->run + vm->run->io.data_offset;
-            uint8_t size = vm->run->io.size;
-
-            if (size == 0 || size > sizeof(uint32_t)) {
-                fprintf(stderr, "invalid I/O access size=%u\n", size);
+        case KVM_EXIT_IO:
+            if (vm_handle_io(vm) < 0)
                 return -1;
-            }
-            for (uint32_t i = 0; i < vm->run->io.count; i++) {
-                uint8_t *item = data + (size_t)i * size;
-                uint32_t value = 0;
-
-                memcpy(&value, item, size);
-                if (vm->run->io.direction == KVM_EXIT_IO_OUT) {
-                    if (!ioport_write(port, size, value)) {
-                        fprintf(stderr, "unhandled I/O write port=0x%x size=%u\n",
-                                port, size);
-                        return -1;
-                    }
-                } else {
-                    if (!ioport_read(port, size, &value)) {
-                        fprintf(stderr, "unhandled I/O read port=0x%x size=%u\n",
-                                port, size);
-                        return -1;
-                    }
-                    memcpy(item, &value, size);
-                }
-            }
             break;
-        }
 
         case KVM_EXIT_MMIO: {
             uint32_t exit_status = 0;
@@ -384,6 +426,8 @@ int vm_run(struct vm *vm) {
 }
 
 void vm_destroy(struct vm *vm) {
+    if (!vm)
+        return;
     if (vm->run && vm->run != MAP_FAILED)
         munmap(vm->run, vm->run_size);
     if (vm->mem && vm->mem != MAP_FAILED)
@@ -394,4 +438,11 @@ void vm_destroy(struct vm *vm) {
         close(vm->vm_fd);
     if (vm->kvm_fd >= 0)
         close(vm->kvm_fd);
+    vm->run = MAP_FAILED;
+    vm->mem = MAP_FAILED;
+    vm->run_size = 0;
+    vm->mem_size = 0;
+    vm->vcpu_fd = -1;
+    vm->vm_fd = -1;
+    vm->kvm_fd = -1;
 }

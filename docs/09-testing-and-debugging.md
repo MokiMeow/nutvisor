@@ -47,11 +47,41 @@ nutvisor, the bug is in *your* setup, not the guest. QEMU is the oracle.
 
 ## Self-test
 
-`make test` runs all five functional guests through KVM and asserts their
-markers. It also checks malformed and truncated ELF rejection plus the
-deliberate triple-fault register dump. Each run has a 60-second local timeout
-(120 seconds in CI), leaving ample cold-start margin while still catching a
-hung guest. CI always builds and runs this suite whenever `/dev/kvm` is usable.
+The checks are layered so ordinary CI and cloud containers exercise correctness
+even without virtualization:
+
+| Command | Requirements | Verifies |
+|---------|--------------|----------|
+| `make test-unit` | GCC, libc, Linux headers | Loader atomicity/BSS/bounds; packed I/O validation; resource cleanup; devices |
+| `make test-host` | Above plus NASM/binutils, Bash/coreutils | Unit tests, guest builds, CLI/preflight and sparse-file limits |
+| `make sanitize` | GCC ASan/UBSan | Host suite in separate `build/sanitize` directory |
+| `make test` | Above plus usable `/dev/kvm` | Host suite followed by all five functional guests and failure diagnostics |
+
+Loader tests fill RAM with `0xA5` before loading, so missing BSS zero-fill cannot
+hide behind anonymous memory's initial zeros. Rejected fixtures must leave the
+entire mapping and entry output untouched, including failures in later headers.
+I/O tests check the complete packed buffer before any emulated device callback.
+
+The guest suite asserts output and exit status, including the deliberate triple
+fault. Each execution has a 60-second local timeout (120 seconds in CI). A timeout
+or signal is a test failure, never evidence of expected guest rejection. CI always
+runs the host and sanitizer suites and only skips **guest execution** when KVM is
+unavailable. A skipped guest suite is not a verified boot.
+
+Sanitizer builds enable leak detection by default. Some ptrace-based execution
+sandboxes cannot run LeakSanitizer; only in that environment use
+`ASAN_OPTIONS=detect_leaks=0 make sanitize` and report leak checking as unverified.
+ASan and UBSan remain enabled. The regular CI command retains leak detection.
+
+For a fast image check without KVM:
+
+```sh
+make all
+build/nutvisor --check --elf guests/kernel/kernel.elf
+```
+
+Preflight validates the supported boot contract, not guest behavior. See
+[security boundaries](11-security.md) before running unfamiliar code.
 
 ## Common failure table
 

@@ -22,9 +22,9 @@ garbage where the kernel expects zeros: a classic, silent bug.
 
 ## Physical vs. virtual addresses
 
-Use `p_paddr` (physical) to place segments, because at entry the guest usually
-hasn't set up its own virtual mapping yet. `p_vaddr` matters once the guest's
-page tables are live. For an identity-mapped low kernel they're equal.
+nutvisor places segments at `p_paddr` and requires `p_vaddr == p_paddr`:
+its initial page tables are an identity map. Higher-half kernels need a different
+boot protocol and are rejected instead of silently starting at an unmapped entry.
 
 ## Validation (implemented, before any guest RAM is changed)
 
@@ -33,13 +33,41 @@ A malformed or hostile ELF can point segments anywhere. Check:
 - every `p_offset + p_filesz` is within the file,
 - every `p_paddr + p_memsz` is within guest memory,
 - `p_memsz >= p_filesz`,
-- `e_entry` lands inside an executable loaded segment,
+- `e_entry` lands inside **file-backed** executable bytes, not only zero-filled BSS,
+- nonempty loadable segments are ordered by address and do not overlap,
+- `p_align` is 0, 1, or a power of two with congruent virtual/file offsets,
+- no segment overlaps the bootstrap tables or initial downward-growing stack,
+- no `PT_INTERP` or `PT_DYNAMIC` requests unsupported dynamic linking,
 - the ELF and program-header layouts and versions are supported.
 
 `src/loader.c` uses subtraction-based bounds checks to avoid integer-overflow
 bypasses and copies potentially unaligned headers into local structs. The
 validation pass completes before a second pass copies and zero-fills segments.
-Malformed images fail with an `ELF: ...` diagnostic.
+Malformed or unsupported images fail with an `ELF: ...` diagnostic. Ordering
+allows overlap checks in O(program-header count), without allocating a segment
+index. At most 1024 program headers are accepted. Zero-sized segments and harmless
+metadata such as `PT_NOTE` are accepted, but cannot supply executable entry bytes.
+
+These are nutvisor's **boot protocol restrictions**, not a claim that all other
+ELF layouts are invalid. In particular, dynamic executables, overlapping load
+segments, higher-half images and BSS entry points are intentionally unsupported.
+`p_flags` checks entry eligibility; the bootstrap identity map does not enforce
+per-segment read/write/execute permissions.
+
+The shared layout in `include/memory_layout.h` reserves `[0x2000, 0x6000)` for
+page tables/GDT and `[0x7f0000, 0x800000)` for the 64 KiB bootstrap stack. A segment
+may end exactly at a reserved range's start, or start exactly at its end. Guests
+needing a larger stack must switch to their own safe stack before exhausting it.
+
+`elf64_validate` checks an image without a VM or RAM allocation. `elf64_load`
+revalidates before copying and leaves both guest RAM and the entry output unchanged
+on failure. The caller must keep the input image separate from guest RAM.
+
+The CLI caps the complete input file at 128 MiB before allocation, independently
+of the 64 MiB guest RAM limit. This allows ELF metadata/debug sections while
+preventing unbounded allocation from huge or sparse files. Validation runs before
+opening `/dev/kvm`, and `build/nutvisor --check --elf kernel.elf` performs preflight
+only. This establishes loadability, not successful guest execution.
 
 ## Entering the kernel
 
@@ -57,5 +85,5 @@ zero-fill path. `make run` builds and boots `guests/kernel/kernel.elf`.
 
 ## References
 
-- ELF-64 specification (program header table)
-- `man 5 elf`
+- [System V ABI: program headers and loading](https://gabi.xinuos.com/elf/07-pheader.html)
+- [Hardening rationale and security boundaries](11-security.md)

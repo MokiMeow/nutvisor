@@ -22,7 +22,9 @@ enum vm_run_result {
 };
 
 /* Create a VM with `mem_size` bytes of guest RAM at guest-physical 0, one
- * vCPU, and a mapped kvm_run. Returns 0 on success, -1 on error (errno set). */
+ * vCPU, and a mapped kvm_run. mem_size must be nonzero and page-aligned.
+ * Returns 0 on success, -1 on error (errno set); partial resources are cleaned
+ * up on failure. Do not call on a live VM without first destroying it. */
 int vm_create(struct vm *vm, size_t mem_size);
 
 /* Copy `len` bytes of guest code to guest-physical `guest_addr`. */
@@ -38,4 +40,9 @@ int vm_set_long_mode(struct vm *vm, uint64_t entry);
 /* Run until the guest halts, requests an MMIO-device exit, or fails. */
 int vm_run(struct vm *vm);
 
+/* Validate and service one KVM_EXIT_IO without running the vCPU. */
+int vm_handle_io(struct vm *vm);
+
+/* Safe after any vm_create attempt and on repeated calls; not on an
+ * uninitialized or merely zero-initialized struct vm. */
 void vm_destroy(struct vm *vm);

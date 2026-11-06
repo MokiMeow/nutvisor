@@ -104,6 +104,21 @@ That line came *from inside a VM your program created*. See
 [docs/01-getting-started.md](docs/01-getting-started.md) for the nested-virt
 requirements (Windows 11 + WSL2 exposes VT-x by default).
 
+## Validate without KVM
+
+```sh
+make all
+make test-host     # loader, devices, lifecycle, I/O bounds and CLI tests
+make sanitize      # ASan + UBSan in a separate build directory
+build/nutvisor --check --elf guests/kernel/kernel.elf
+```
+
+`--check` validates the supported boot layout without opening `/dev/kvm`.
+Malformed images are also rejected before KVM initialization during normal runs.
+ELF guests must be static, identity-mapped x86-64 executables; input files are
+limited to 128 MiB. See the [ELF contract](docs/08-elf-loading.md) for reserved
+memory, alignment and entry-point restrictions. Preflight does not execute code.
+
 ## Status
 
 nutvisor v1.0.0 is complete: it installs a coherent KVM CPUID table, validates
@@ -128,6 +143,8 @@ device model is deliberately small: COM1, the documented port-I/O routes, and
 the debug/exit MMIO device. It does not provide production isolation, live
 migration, snapshots, PCI, networking, storage devices, or a general firmware
 stack. Guest inputs should be treated as trusted demonstration workloads.
+There is no built-in runtime/output limit or host process sandbox. See
+[security boundaries and safe operation](docs/11-security.md).
 
 ## Repository layout
 
@@ -136,9 +153,10 @@ nutvisor/
 ├── src/          # the VMM (C, auto-discovered by the Makefile)
 ├── include/      # VMM headers
 ├── guests/       # guest programs the VMM runs (asm/C)
-├── scripts/      # KVM setup and end-to-end self-test
+├── tests/        # hardware-free C regression tests
+├── scripts/      # KVM setup, host CLI tests and end-to-end self-test
 ├── docs/         # KVM API, architecture, roadmap, milestones, ADRs
-└── Makefile      # all / test / run / check-kvm / clean
+└── Makefile      # all / test-host / sanitize / test / run / clean
 ```
 
 ## Requirements

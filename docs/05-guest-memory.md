@@ -36,7 +36,7 @@ range. v1 uses one slot for all of low RAM. You'd add slots for:
 | Milestone | Guest layout |
 |-----------|--------------|
 | M0 | 1 MiB flat; guest blob at `0x1000`, real mode |
-| M2 | 64 MiB RAM; flat guest at `0x100000`; paging at `0x2000`–`0x4fff`, GDT at `0x5000`, stack at `0x800000` |
+| M2 | 64 MiB RAM; flat guest at `0x100000`; paging at `0x2000`–`0x4fff`, GDT at `0x5000`, stack reserved at `0x7f0000`–`0x7fffff`, initial RSP `0x800000` |
 | M4 | ELF `PT_LOAD` segments copied to validated `p_paddr` ranges; zero-filled `.bss`; entry at executable `e_entry` |
 
 ## Gotchas
@@ -52,3 +52,13 @@ range. v1 uses one slot for all of low RAM. You'd add slots for:
 - **Identity vs. higher-half.** The implemented PML4 at `0x2000`, PDPT at
   `0x3000`, and page directory at `0x4000` identity-map the first GiB with
   2 MiB pages. The GDT lives at `0x5000`.
+
+## Bootstrap reservations
+
+`include/memory_layout.h` is the shared source of bootstrap addresses used by
+both loading and vCPU setup. ELF and `--long` images must avoid the page-table/GDT
+range `[0x2000, 0x6000)` and the downward-growing stack `[0x7f0000, 0x800000)`.
+These reservations prevent setup from erasing loaded code/data and initial stack
+writes from corrupting an otherwise valid ELF. They do not apply to `--real`
+blobs, which do not use the long-mode bootstrap. The loader does not prevent a
+running guest from deliberately modifying its own page tables or stack.

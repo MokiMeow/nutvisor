@@ -28,3 +28,5 @@ Step-by-step specs, each with a Definition of Done, live in
 ## Design decisions
 
 The *why* behind the big choices lives in [decisions/](decisions/) (ADRs).
+
+- [11: Security boundaries and hardening rationale](11-security.md)

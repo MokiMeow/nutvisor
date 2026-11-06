@@ -5,18 +5,16 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/mman.h>
 
 #include "loader.h"
+#include "memory_layout.h"
 #include "vmm.h"
 
 #define MAX_PROGRAM_HEADERS 1024U
 
 static bool file_range_valid(uint64_t offset, uint64_t length, size_t size) {
     return offset <= size && length <= size - offset;
-}
-
-static bool guest_range_valid(uint64_t address, uint64_t length, size_t size) {
-    return address <= size && length <= size - address;
 }
 
 static void read_program_header(const uint8_t *image, const Elf64_Ehdr *header,
@@ -77,18 +75,33 @@ static int validate_header(const uint8_t *image, size_t image_size,
     return 0;
 }
 
-static int validate_segments(struct vm *vm, const uint8_t *image,
+static int validate_segments(size_t mem_size, const uint8_t *image,
                              size_t image_size, const Elf64_Ehdr *header) {
     bool found_load = false;
     bool entry_loaded = false;
+    uint64_t previous_end = 0;
 
     for (size_t i = 0; i < header->e_phnum; i++) {
         Elf64_Phdr program;
         read_program_header(image, header, i, &program);
 
+        if (program.p_type == PT_INTERP || program.p_type == PT_DYNAMIC) {
+            fprintf(stderr, "ELF: dynamic linking is not supported\n");
+            return -1;
+        }
         if (program.p_type != PT_LOAD)
             continue;
-        found_load = true;
+        if (program.p_vaddr != program.p_paddr) {
+            fprintf(stderr, "ELF: segment %zu is not identity-mapped\n", i);
+            return -1;
+        }
+        if (program.p_align > 1
+                && ((program.p_align & (program.p_align - 1)) != 0
+                    || program.p_vaddr % program.p_align
+                        != program.p_offset % program.p_align)) {
+            fprintf(stderr, "ELF: segment %zu has invalid alignment\n", i);
+            return -1;
+        }
         if (program.p_memsz < program.p_filesz) {
             fprintf(stderr, "ELF: segment %zu has filesz larger than memsz\n",
                     i);
@@ -99,14 +112,27 @@ static int validate_segments(struct vm *vm, const uint8_t *image,
             fprintf(stderr, "ELF: segment %zu data is outside the file\n", i);
             return -1;
         }
-        if (!guest_range_valid(program.p_paddr, program.p_memsz,
-                               vm->mem_size)) {
+        if (!vm_range_fits(program.p_paddr, program.p_memsz, mem_size)) {
             fprintf(stderr, "ELF: segment %zu does not fit in guest RAM\n", i);
             return -1;
         }
+        if (vm_boot_range_reserved(program.p_paddr, program.p_memsz)) {
+            fprintf(stderr, "ELF: segment %zu overlaps bootstrap memory\n", i);
+            return -1;
+        }
+        /* ELF orders PT_LOAD entries by virtual address. Enforcing that
+         * contract makes overlap detection linear, including BSS ranges. */
+        if (program.p_memsz == 0)
+            continue;
+        if (found_load && program.p_paddr < previous_end) {
+            fprintf(stderr, "ELF: segment %zu overlaps or is out of order\n", i);
+            return -1;
+        }
+        found_load = true;
+        previous_end = program.p_paddr + program.p_memsz;
         if ((program.p_flags & PF_X) != 0
                 && header->e_entry >= program.p_paddr
-                && header->e_entry - program.p_paddr < program.p_memsz) {
+                && header->e_entry - program.p_paddr < program.p_filesz) {
             entry_loaded = true;
         }
     }
@@ -116,9 +142,25 @@ static int validate_segments(struct vm *vm, const uint8_t *image,
         return -1;
     }
     if (!entry_loaded) {
-        fprintf(stderr, "ELF: entry point is not in an executable segment\n");
+        fprintf(stderr, "ELF: entry point is not in file-backed executable code\n");
         return -1;
     }
+    return 0;
+}
+
+int elf64_validate(const void *image_data, size_t image_size,
+                    size_t mem_size, uint64_t *entry) {
+    const uint8_t *image = image_data;
+    Elf64_Ehdr header;
+
+    if (!image || !entry) {
+        fprintf(stderr, "ELF: invalid loader arguments\n");
+        return -1;
+    }
+    if (validate_header(image, image_size, &header) < 0
+            || validate_segments(mem_size, image, image_size, &header) < 0)
+        return -1;
+    *entry = header.e_entry;
     return 0;
 }
 
@@ -126,16 +168,21 @@ int elf64_load(struct vm *vm, const void *image_data, size_t image_size,
                uint64_t *entry) {
     const uint8_t *image = image_data;
     Elf64_Ehdr header;
+    uint64_t validated_entry;
 
-    if (validate_header(image, image_size, &header) < 0
-            || validate_segments(vm, image, image_size, &header) < 0)
+    if (!vm || !vm->mem || vm->mem == MAP_FAILED || !entry) {
+        fprintf(stderr, "ELF: invalid loader arguments\n");
         return -1;
+    }
+    if (elf64_validate(image, image_size, vm->mem_size, &validated_entry) < 0)
+        return -1;
+    memcpy(&header, image, sizeof(header));
 
     for (size_t i = 0; i < header.e_phnum; i++) {
         Elf64_Phdr program;
         read_program_header(image, &header, i, &program);
 
-        if (program.p_type != PT_LOAD)
+        if (program.p_type != PT_LOAD || program.p_memsz == 0)
             continue;
         memcpy(vm->mem + program.p_paddr, image + program.p_offset,
                (size_t)program.p_filesz);
@@ -143,6 +190,6 @@ int elf64_load(struct vm *vm, const void *image_data, size_t image_size,
                (size_t)(program.p_memsz - program.p_filesz));
     }
 
-    *entry = header.e_entry;
+    *entry = validated_entry;
     return 0;
 }

@@ -6,6 +6,24 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- Hardware-free `--check` preflight, loader/device/I/O/lifecycle regression tests,
+  and separate host/ASan/UBSan test targets that run even without KVM.
+- A documented bootstrap memory contract and security boundary/research rationale.
+
+### Fixed
+- Reject ELF segments that overlap bootstrap tables/stack, overlap one another,
+  use unsupported virtual layouts/dynamic linking, or violate alignment rules.
+- Require an entry in file-backed executable bytes and validate before opening
+  KVM; cap input file allocation at 128 MiB.
+- Validate complete packed KVM I/O buffers before dispatch, including widths,
+  directions, counts and overflow-safe offsets.
+- Clean up partial VM creation, reject undersized run mappings and make repeated
+  destruction safe without closing subsequently reused descriptors.
+- Track header dependencies and honor linker flags in incremental builds.
+- Reject timeout/signal exits in deliberate-failure guest tests instead of
+  mistaking them for expected errors.
+
 ### Changed
 - Expanded the README with explicit limitations and a complete documentation
   map, and standardized first-party Markdown punctuation.

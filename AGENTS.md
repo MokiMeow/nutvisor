@@ -49,6 +49,9 @@ Run from the repo root on WSL2 / Linux. The environment needs `/dev/kvm`
 |---------|--------------|
 | `./scripts/setup-kvm.sh` | Ensure `/dev/kvm` exists (loads the KVM module). |
 | `make all` | Build `build/nutvisor` and the guest image(s). |
+| `make test-unit` | Run C regression tests without KVM or NASM. |
+| `make test-host` | Build all guests and run host-only regression/CLI tests. |
+| `make sanitize` | Run the host suite under ASan/UBSan in `build/sanitize`. |
 | `make test` | Run the complete guest and failure-path regression suite. |
 | `make run` | Build, ensure `/dev/kvm`, and run the current guest. |
 | `make clean` | Remove `build/`. |
@@ -65,7 +68,10 @@ root-only, so testing `[ -e /dev/kvm ]` passes and the guest then fails with
 installs a udev rule to open the device up, runs the guest for real, and only
 skips if the device is genuinely unusable.
 
-Never claim a milestone is done without having actually run its guest.
+Never claim a milestone is done without having actually run its guest. On hosts
+without KVM, run `make all test-host` and `make sanitize`, explicitly report guest
+execution as unverified, and inspect the exact commit's CI guest-test result.
+Never report a skipped guest test as a passed boot.
 
 ## 4. Coding standards
 
